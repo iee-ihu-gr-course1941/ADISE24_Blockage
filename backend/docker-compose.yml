@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    networks:
+      - app-network
+  
+  db:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_HOST: db
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./config/init.sql:/docker-entrypoint-initdb.d/1.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin
+    depends_on:
+      - db
+    ports:
+      - "${PMA_PORT:-6006}:80"
+    environment:
+      - PMA_ARBITRARY=1
+    networks:
+      - app-network
+
+volumes:
+  db_data:
+
+networks:
+  app-network:
+    driver: bridge
