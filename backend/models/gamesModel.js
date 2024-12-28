@@ -1,27 +1,38 @@
 const db = require('../config/db');
 
-// Create a new game
+// Create a new game and add the creator as a participant
 const createNewGame = (createdBy, maxPlayers) => {
     return new Promise((resolve, reject) => {
-        const query = `
-            INSERT INTO games (created_by, max_number_of_players)
-            VALUES (?, ?)
-        `;
-        db.query(query, [createdBy, maxPlayers], (err, results) => {
+        db.query('CALL CreateGameAndJoin(?,?,@gameId); SELECT @gameId AS gameId;', [createdBy, maxPlayers], (err, results) => {
             if (err) return reject(err);
-            resolve(results.insertId);
+            
+            // Extract the gameId from the second result set (the SELECT @gameId query)
+            const gameId = results[1][0].gameId;
+            resolve(gameId);  // Resolve with the new game ID
         });
     });
 };
 
 // Add a participant to a game
-const addParticipant = (gameId, playerId, color) => {
+const addParticipant = (gameId, playerId) => {
     return new Promise((resolve, reject) => {
         const query = `
-            INSERT INTO participants (game_id, player_id, color)
-            VALUES (?, ?, ?)
+            CALL JoinGame(?, ?)
         `;
-        db.query(query, [gameId, playerId, color], (err, results) => {
+        db.query(query, [gameId, playerId], (err, results) => {
+            if (err) return reject(err);
+            resolve(results);
+        });
+    });
+};
+
+// Remove a participant from a game
+const removeParticipant = (playerId) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+            CALL RemoveParticipant(?)
+        `;
+        db.query(query, [playerId], (err, results) => {
             if (err) return reject(err);
             resolve(results);
         });
@@ -44,19 +55,5 @@ const fetchGames = () => {
     });
 };
 
-// Mark a participant as ready
-const markParticipantReady = (gameId, playerId) => {
-    return new Promise((resolve, reject) => {
-        const query = `
-            UPDATE participants
-            SET is_ready = TRUE
-            WHERE game_id = ? AND player_id = ?
-        `;
-        db.query(query, [gameId, playerId], (err, results) => {
-            if (err) return reject(err);
-            resolve(results);
-        });
-    });
-};
 
-module.exports = { createNewGame, addParticipant, fetchGames, markParticipantReady };
+module.exports = { createNewGame, addParticipant, fetchGames, removeParticipant };

@@ -1,4 +1,4 @@
-const { createNewGame, addParticipant, fetchGames, markParticipantReady } = require('../models/gamesModel');
+const { createNewGame, addParticipant, fetchGames, removeParticipant } = require('../models/gamesModel');
 
 // Create a new game
 const createGame = async (req, res) => {
@@ -13,6 +13,9 @@ const createGame = async (req, res) => {
         const gameId = await createNewGame(user.id, max_number_of_players);
         res.status(201).json({ message: 'Game created', gameId });
     } catch (error) {
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ error: error.message });
+        }
         console.error('Error creating game:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -21,17 +24,34 @@ const createGame = async (req, res) => {
 // Join an existing game
 const joinGame = async (req, res) => {
     const { user } = req; // Decoded from JWT
-    const { gameId, color } = req.body;
+    const { gameId } = req.body;
 
-    if (!gameId || !color) {
-        return res.status(400).json({ error: 'Game ID and color are required' });
+    if (!gameId) {
+        return res.status(400).json({ error: 'Game ID is required' });
     }
 
     try {
-        await addParticipant(gameId, user.id, color);
+        await addParticipant(gameId, user.id);
         res.status(200).json({ message: 'Joined game' });
     } catch (error) {
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ error: error.message });
+        }
         console.error('Error joining game:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// Leave a game
+const leaveGame = async (req, res) => {
+    const { user } = req; // Decoded from JWT
+    // const { gameId } = req.params;
+
+    try {
+        await removeParticipant(user.id);
+        res.status(200).json({ message: 'Player left game' });
+    } catch (error) {
+        console.error('Error leaving game:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -47,18 +67,4 @@ const listGames = async (req, res) => {
     }
 };
 
-// Set participant as ready
-const setPlayerReady = async (req, res) => {
-    const { user } = req;
-    const { gameId } = req.params;
-
-    try {
-        await markParticipantReady(gameId, user.id);
-        res.status(200).json({ message: 'Player marked as ready' });
-    } catch (error) {
-        console.error('Error marking player ready:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-module.exports = { createGame, joinGame, listGames, setPlayerReady };
+module.exports = { createGame, joinGame, listGames, leaveGame };
