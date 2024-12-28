@@ -1,8 +1,10 @@
 const jwt = require('jsonwebtoken');
+const { getPlayer } = require('../models/playersModel.js');
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware to validate JWT tokens
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -14,6 +16,15 @@ const authenticateToken = (req, res, next) => {
     try {
         // Verify token
         const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await getPlayer(decoded.id);
+        // console.log(user);
+
+        // Check if user with the provided token exists 
+        if (!user.length || user[0].player_id !== decoded.id) {
+            console.error('User not found in the database');
+            return res.status(401).json({ error: 'User not found', message: 'It could be potential due to token expiration' })
+        }
+
         req.user = decoded; // Attach decoded user to request
         next(); // Proceed to the next middleware or route handler
     } catch (error) {

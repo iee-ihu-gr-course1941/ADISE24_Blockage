@@ -1,4 +1,4 @@
-const { createNewGame, addParticipant, fetchGames, markParticipantReady } = require('../models/gamesModel');
+const { createNewGame, addParticipant, fetchGames, checkIfPlayerHasActiveGame } = require('../models/gamesModel');
 
 // Create a new game
 const createGame = async (req, res) => {
@@ -6,12 +6,25 @@ const createGame = async (req, res) => {
     const { max_number_of_players } = req.body;
 
     if (!max_number_of_players || !['2', '4'].includes(max_number_of_players)) {
-        return res.status(400).json({ error: 'Invalid number of players' });
+        return res.status(400).json({ error: 'Invalid number of players. Only \'2\' or \'4\' are allowed' });
     }
 
     try {
+        const isPlayerInActiveGame = await checkIfPlayerHasActiveGame(user.id);
+        if (isPlayerInActiveGame) {
+            return res.status(400).json({ error: `Player with id: \'${user.id}\' already has an active game` })
+        }
+
         const gameId = await createNewGame(user.id, max_number_of_players);
         res.status(201).json({ message: 'Game created', gameId });
+
+        // const io = req.app.get('io');
+        // const socket = io.sockets.sockets.get(user.id);
+        // console.log(io);
+        // console.log(socket);
+        // socket.join(gameId);
+        // io.to(user.id).emit('game-created', { message: `Game with id ${gameId} created successfully` });
+
     } catch (error) {
         console.error('Error creating game:', error);
         res.status(500).json({ error: 'Internal server error' });

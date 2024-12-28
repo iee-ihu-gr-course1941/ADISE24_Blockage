@@ -1,0 +1,42 @@
+const jwt = require('jsonwebtoken');
+const { getPlayer } = require('../models/playersModel.js');
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Middleware to validate JWT tokens for socketio clients
+const socketioToken = async (socket, next) => {
+
+    // Check if token is provided in the headers
+    // *Note: Postman does not support socket.handshake.auth.token
+    //  therefore we need to use socket.handshake.headers.token in order to check it
+    const authHeader = socket.handshake.auth?.token || socket.handshake.headers?.token;
+
+    if (!authHeader || !authHeader.startsWith('Bearer')) {
+        const err = new Error('Authorization token is missing or invalid (socketio)');
+        err.statusCode = 401;
+        return err; // fix this
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await getPlayer(decoded.id);
+        // console.log(user);
+
+        // Check if user with the provided token exists 
+        if (!user.length || user[0].player_id !== decoded.id) {
+            throw new Error('User not found');
+        }
+
+        socket.user = decoded; // Attach decoded user to request
+        next(); // Proceed to the next middleware or route handler
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        const err = new Error('Invalid token');
+        err.statusCode = 403;
+        return err;
+    }
+}
+
+module.exports = { socketioToken }
