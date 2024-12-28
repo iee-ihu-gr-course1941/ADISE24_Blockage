@@ -1,4 +1,11 @@
-const { createNewGame, addParticipant, fetchGames, checkIfPlayerHasActiveGame } = require('../models/gamesModel');
+const {
+    createNewGame,
+    addParticipant,
+    fetchGames,
+    retrieveGameById,
+    gameExists,
+    checkIfPlayerHasActiveGame
+} = require('../models/gamesModel');
 
 // Create a new game
 const createGame = async (req, res) => {
@@ -60,18 +67,21 @@ const listGames = async (req, res) => {
     }
 };
 
-// Set participant as ready
-const setPlayerReady = async (req, res) => {
-    const { user } = req;
+const retrieveGame = async (req, res) => {
     const { gameId } = req.params;
-
     try {
-        await markParticipantReady(gameId, user.id);
-        res.status(200).json({ message: 'Player marked as ready' });
-    } catch (error) {
-        console.error('Error marking player ready:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        if (!gameExists(gameId))
+            throw new Error(`There is no game with id ${gameId}`);
+        const game = await retrieveGameById(gameId);
+        res.status(200).json({ game });
+    } catch (err) {
+        res.status(400).json(err.message);
     }
-};
+}
 
-module.exports = { createGame, joinGame, listGames, setPlayerReady };
+module.exports = {
+    createGame,
+    joinGame,
+    listGames,
+    retrieveGame
+};

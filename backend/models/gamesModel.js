@@ -57,7 +57,21 @@ const fetchGames = () => {
     });
 };
 
-const retrieveGame = async (gameId) => {
+// const retrieveGame = async (gameId) => {
+//     try {
+//         const query = `
+//             SELECT * FROM games WHERE game_id = ?
+//         `;
+//         const [result] = await db.query(query, [gameId]);
+//         // console.log(result);
+//         // console.log(result[0]['game_id']);
+//         return result[0]['game_id'];
+//     } catch (err) {
+//         console.error('Error retrieving game with ID:', err);
+//     }
+// }
+
+const retrieveGameById = async (gameId) => {
     try {
         const query = `
             SELECT * FROM games WHERE game_id = ?
@@ -65,11 +79,9 @@ const retrieveGame = async (gameId) => {
         const [result] = await db.query(query, [gameId]);
         // console.log(result);
         // console.log(result[0]['game_id']);
-        return result[0].game_id;
+        return result[0];
     } catch (err) {
         console.error('Error retrieving game with ID:', err);
-        // const error = new Error(`Error retrieving game with ID: ${gameId}`);
-        // throw error;
     }
 }
 
@@ -109,7 +121,7 @@ module.exports = {
     createNewGame,
     addParticipant,
     fetchGames,
-    retrieveGame,
+    retrieveGameById,
     gameExists,
     checkIfPlayerHasActiveGame
 };

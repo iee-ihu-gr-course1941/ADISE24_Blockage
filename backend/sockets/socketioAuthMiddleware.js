@@ -12,9 +12,10 @@ const socketioToken = async (socket, next) => {
     const authHeader = socket.handshake.auth?.token || socket.handshake.headers?.token;
 
     if (!authHeader || !authHeader.startsWith('Bearer')) {
-        const err = new Error('Authorization token is missing or invalid (socketio)');
-        err.statusCode = 401;
-        return err; // fix this
+        // console.error('SocketIO client trying to connect BUT... Token is missing');
+        // Proceed to the next middleware by producing an error message to client and forces
+        // to release the handshake connection for both sides (server-client)
+        return next(new Error('Authorization token is missing or invalid (websocket)'));
     }
 
     const token = authHeader.split(' ')[1];
@@ -32,10 +33,10 @@ const socketioToken = async (socket, next) => {
         socket.user = decoded; // Attach decoded user to request
         next(); // Proceed to the next middleware or route handler
     } catch (error) {
-        console.error('Token verification failed:', error);
-        const err = new Error('Invalid token');
-        err.statusCode = 403;
-        return err;
+        console.error('Token verification failed (websocket)');
+        // Proceed to the next middleware by producing an error message to client and forces
+        // to release the handshake connection for both sides (server-client)
+        return next(new Error('Invalid token (websocket)'));
     }
 }
 

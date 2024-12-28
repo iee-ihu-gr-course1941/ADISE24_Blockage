@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateToken } = require('../middleware/authMiddleware');
-const { createGame, joinGame, listGames, setPlayerReady } = require('../controllers/gamesController');
+const { createGame, joinGame, listGames, retrieveGame } = require('../controllers/gamesController');
 
 const router = express.Router();
 
@@ -16,7 +16,6 @@ router.post('/join', joinGame);
 // List all games
 router.get('/', listGames);
 
-// // Mark a participant as ready
-// router.patch('/:gameId/ready', authenticateToken, setPlayerReady);
+router.get('/:gameId', retrieveGame);
 
 module.exports = router;
