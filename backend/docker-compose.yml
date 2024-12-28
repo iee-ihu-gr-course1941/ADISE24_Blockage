@@ -26,7 +26,8 @@ services:
       - "${DB_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./config/init.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./config/schema.sql:/docker-entrypoint-initdb.d/1.sql
+      - ./config/storedProcedures.sql:/docker-entrypoint-initdb.d/2.sql
     networks:
       - app-network
     healthcheck:
