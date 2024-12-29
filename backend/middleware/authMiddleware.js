@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { getPlayer } = require('../models/playersModel.js');
+const { getPlayerById } = require('../models/playersModel.js');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -16,7 +16,7 @@ const authenticateToken = async (req, res, next) => {
     try {
         // Verify token
         const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await getPlayer(decoded.id);
+        const user = await getPlayerById(decoded.id);
         // console.log(user);
 
         // Check if user with the provided token exists 

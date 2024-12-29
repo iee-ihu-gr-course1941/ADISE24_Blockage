@@ -19,7 +19,7 @@ const createGame = async (req, res) => {
     try {
         const isPlayerInActiveGame = await checkIfPlayerHasActiveGame(user.id);
         if (isPlayerInActiveGame) {
-            return res.status(400).json({ error: `Player with id: \'${user.id}\' already has an active game` })
+            return res.status(400).json({ error: `You already has an active game` })
         }
 
         const gameId = await createNewGame(user.id, max_number_of_players);
@@ -42,12 +42,20 @@ const createGame = async (req, res) => {
 const joinGame = async (req, res) => {
     const { user } = req; // Decoded from JWT
     const { gameId, color } = req.body;
-
-    if (!gameId || !color) {
-        return res.status(400).json({ error: 'Game ID and color are required' });
-    }
-
     try {
+        if (!gameId || !color) {
+            return res.status(400).json({ error: 'Game ID and color are required' });
+        }
+        if (!await gameExists(gameId)) {
+            return res.status(400).json({error: `There is no game with id ${gameId}`});
+        }
+        if(await checkIfPlayerHasActiveGame(user.id)){
+            return res.status(400).json({ error: `You already has an active game` })
+        }
+        if(!(['blue','red','green','magenta'].includes(color))){
+            return res.status(400).json({error: `The provided color '${color}' is not allowed. Please choose one of the following: 'blue','red','green','magenta'`});
+        }
+
         await addParticipant(gameId, user.id, color);
         res.status(200).json({ message: 'Joined game' });
     } catch (error) {
@@ -70,12 +78,16 @@ const listGames = async (req, res) => {
 const retrieveGame = async (req, res) => {
     const { gameId } = req.params;
     try {
-        if (!gameExists(gameId))
+        if (!gameId || isNaN(gameId)) {
+            return res.status(400).json({ error: 'Game ID numeric as parameter is required' });
+        }
+        if (!await gameExists(gameId)) {
             throw new Error(`There is no game with id ${gameId}`);
+        }
         const game = await retrieveGameById(gameId);
         res.status(200).json({ game });
     } catch (err) {
-        res.status(400).json(err.message);
+        res.status(400).json({ message: err.message });
     }
 }
 
