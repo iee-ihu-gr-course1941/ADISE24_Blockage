@@ -1,10 +1,11 @@
 const { gameExists } = require('../models/gamesModel');
+const { removeUserSocketMap } = require('../sockets/socketioAuthMiddleware.js');
 
 module.exports = (io) => {
 
     io.on('connection', (socket) => {
         const { user } = socket;
-        console.log(`User ${user.id}  with socketID: '${socket.id}' connected`);
+        // console.log(`User ${user.id}  with socketID: '${socket.id}' connected`);
         // console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
         socket.on('game-created', async ({ gameId }) => {
             try {
@@ -43,6 +44,7 @@ module.exports = (io) => {
         });
         socket.on('disconnect', () => {
             checkIfAlreadyInActiveGame(socket, io);
+            removeUserSocketMap(socket);
             console.log('user with socketID: ' + socket.id + ' disconnected');
             // console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
         });

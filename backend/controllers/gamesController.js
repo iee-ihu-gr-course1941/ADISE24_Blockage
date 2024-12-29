@@ -6,6 +6,7 @@ const {
     gameExists,
     checkIfPlayerHasActiveGame
 } = require('../models/gamesModel');
+const { getUserSocket } = require('../sockets/socketioAuthMiddleware.js');
 
 // Create a new game
 const createGame = async (req, res) => {
@@ -19,21 +20,25 @@ const createGame = async (req, res) => {
     try {
         const isPlayerInActiveGame = await checkIfPlayerHasActiveGame(user.id);
         if (isPlayerInActiveGame) {
-            return res.status(400).json({ error: `You already has an active game` })
+            return res.status(400).json({ error: `You already have an active game` })
         }
 
+        // ... socketio here
+
         const gameId = await createNewGame(user.id, max_number_of_players);
-        res.status(201).json({ message: 'Game created', gameId });
+        console.log(`New game added: gameId: ${gameId}`);
 
-        // const io = req.app.get('io');
-        // const socket = io.sockets.sockets.get(user.id);
-        // console.log(io);
-        // console.log(socket);
-        // socket.join(gameId);
-        // io.to(user.id).emit('game-created', { message: `Game with id ${gameId} created successfully` });
+        // -> This will be needed after the merge/ stored procedure
+        if (!(['blue', 'red', 'green', 'magenta'].includes(color))) {
+            return res.status(400).json({ error: `The provided color '${color}' is not allowed. Please choose one of the following: 'blue','red','green','magenta'` });
+        }
 
+        // -> The 'red' color hardcoded will be replaced by the specified from stored procedure
+        const participant = await addParticipant(gameId, user.id, 'red');
+        console.log(`New participant added: gameId: ${participant}`);
+        res.status(200).json({ message: `Game and participant added`, gameId });
     } catch (error) {
-        console.error('Error creating game:', error);
+        console.error('Error creating game or creating a leader participant :', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };

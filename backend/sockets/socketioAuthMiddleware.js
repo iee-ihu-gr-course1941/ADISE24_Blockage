@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const { getPlayerById } = require('../models/playersModel.js');
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const userSocketMap = new Map();
 
 // Middleware to validate JWT tokens for socketio clients
 const socketioToken = async (socket, next) => {
@@ -24,13 +25,15 @@ const socketioToken = async (socket, next) => {
         const decoded = jwt.verify(token, JWT_SECRET);
         const user = await getPlayerById(decoded.id);
         // console.log(user);
+        // console.log(socket);
 
         // Check if user with the provided token exists 
         if (!user.length || user[0].player_id !== decoded.id) {
-            throw new Error('User not found');
+            return next(new Error('User not found'));
         }
 
         socket.user = decoded; // Attach decoded user to request
+        userSocketMap.set(decoded.id, socket.id)    // Store user's socket id in a map
         next(); // Proceed to the next middleware or route handler
     } catch (error) {
         console.error('Token verification failed (websocket)');
@@ -40,4 +43,16 @@ const socketioToken = async (socket, next) => {
     }
 }
 
-module.exports = { socketioToken }
+// Get user's socket by user id
+const getUserSocket = (userId) => {
+    return userSocketMap.get(userId);
+ }
+
+// Cleanup socketioUserMap when a user disconnects
+const removeUserSocketMap = (socket) => {
+    if (socket.user && userSocketMap.has(socket.user.id)) {
+        userSocketMap.delete(socket.user.id); // Remove user from the map
+    }
+}
+
+module.exports = { socketioToken, getUserSocket, removeUserSocketMap }
