@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticateToken } = require('../middleware/authMiddleware');
-const { createGame, joinGame, listGames, leaveGame } = require('../controllers/gamesController');
+const { createGame, joinGame, leaveGame, listGames, retrieveGame} = require('../controllers/gamesController');
 
 const router = express.Router();
 
@@ -18,5 +18,7 @@ router.delete('/leave/:gameId', leaveGame);
 
 // List all games
 router.get('/', listGames);
+
+router.get('/:gameId', retrieveGame);
 
 module.exports = router;

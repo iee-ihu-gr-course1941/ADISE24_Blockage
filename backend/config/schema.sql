@@ -14,6 +14,7 @@
 -- Table structure for table `games`
 --
 
+DROP TABLE IF EXISTS `games`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `games` (
@@ -35,6 +36,7 @@ CREATE TABLE `games` (
 -- Table structure for table `participants`
 --
 
+DROP TABLE IF EXISTS `participants`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `participants` (
@@ -55,6 +57,7 @@ CREATE TABLE `participants` (
 -- Table structure for table `placed_tiles`
 --
 
+DROP TABLE IF EXISTS `placed_tiles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `placed_tiles` (
@@ -77,6 +80,7 @@ CREATE TABLE `placed_tiles` (
 -- Table structure for table `players`
 --
 
+DROP TABLE IF EXISTS `players`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `players` (
