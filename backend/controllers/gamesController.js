@@ -4,7 +4,6 @@ const {
     fetchGames,
     retrieveGameById,
     gameExists,
-    // checkIfPlayerHasActiveGame,
     removeParticipant
 } = require('../models/gamesModel');
 const { getUserSocket } = require('../sockets/socketioAuthMiddleware.js');
@@ -19,18 +18,21 @@ const createGame = async (req, res) => {
     }
 
     try {
-        // const isPlayerInActiveGame = await checkIfPlayerHasActiveGame(user.id);
-        // if (isPlayerInActiveGame) {
-        //     return res.status(400).json({ error: `You already have an active game` })
-        // }
-
-        // ... socketio here
+        const io = req.app.get('io');
+        console.log(io);
+        // console.log(`Active sockets: ${io.sockets.sockets.size}`);
+        const socketId = getUserSocket(user.id)
+        if (socketId) {
+            console.log(socketId);
+            return res.status(400).json({ error: 'You have already a socket' });
+        }
+        console.log(`No socket for user ${user.id}`);
 
         const gameId = await createNewGame(user.id, max_number_of_players);
         res.status(201).json({ message: 'Game created', gameId });
     } catch (error) {
         if (error.sqlState === '45000') {
-            return res.status(400).json({ error: error.message });
+            return res.status(400).json({ error: error.message, message: 'Error creating game.' });
         }
         console.error('Error creating game:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -43,7 +45,7 @@ const joinGame = async (req, res) => {
     const { gameId } = req.body;
 
     if (!gameId) {
-        return res.status(400).json({ error: 'Game ID is required' });
+        return res.status(400).json({ error: 'gameId data field is required' });
     }
 
     try {
@@ -62,7 +64,6 @@ const joinGame = async (req, res) => {
 const leaveGame = async (req, res) => {
     const { user } = req; // Decoded from JWT
     // const { gameId } = req.params;
-
     try {
         await removeParticipant(user.id);
         res.status(200).json({ message: 'Player left game' });
@@ -87,7 +88,7 @@ const retrieveGame = async (req, res) => {
     const { gameId } = req.params;
     try {
         if (!gameId || isNaN(gameId)) {
-            return res.status(400).json({ error: 'Game ID numeric as parameter is required' });
+            return res.status(400).json({ error: 'gameId numeric as parameter is required' });
         }
         if (!await gameExists(gameId)) {
             throw new Error(`There is no game with id ${gameId}`);

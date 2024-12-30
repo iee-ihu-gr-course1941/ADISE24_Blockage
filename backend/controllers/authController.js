@@ -10,7 +10,7 @@ const loginGuest = async (req, res) => {
     const { playerName } = req.body;
 
     if (!playerName || playerName.trim() === '') {
-        return res.status(400).json({ error: 'playerName is required' });
+        return res.status(400).json({ error: 'playerName data field is required' });
     }
 
     try {

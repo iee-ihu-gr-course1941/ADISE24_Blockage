@@ -189,4 +189,36 @@ DELIMITER ;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-12-28 16:48:53
+-- “unhandled user-defined exception.”
+DELIMITER ;;
+CREATE DEFINER=`root`@`localhost` PROCEDURE `updateGameStatus`(
+    IN gameId INT,
+    IN newStatus VARCHAR(20)
+)
+BEGIN
+  IF NOT EXISTS (
+	SELECT 1 FROM games g WHERE  g.game_id = gameId
+   ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Game id does not exist.';
+    END IF;
+   IF (newStatus NOT IN ('ended', 'aborted') 
+	) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Status data field must be either "ended" or "aborted".';
+    END IF;
+  IF NOT EXISTS (
+         SELECT * 
+         FROM  games g
+         WHERE g.game_id = gameId AND g.status IN ('initialized', 'started')
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Game has already ended or aborted.';
+    END IF;
+    
+    START TRANSACTION;
+    
+    UPDATE games g
+    SET g.status = newStatus
+    WHERE g.game_id = gameId;
+    
+    COMMIT;
+    END ;;
+    DELIMITER ;

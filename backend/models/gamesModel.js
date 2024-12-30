@@ -1,18 +1,5 @@
 const db = require('../config/db');
 
-// // Create a new game and add the creator as a participant
-// const createNewGame = (createdBy, maxPlayers) => {
-//     return new Promise((resolve, reject) => {
-//         db.query('CALL CreateGameAndJoin(?,?,@gameId); SELECT @gameId AS gameId;', [createdBy, maxPlayers], (err, results) => {
-//             if (err) return reject(err);
-//            
-//             // Extract the gameId from the second result set (the SELECT @gameId query)
-//             const gameId = results[1][0].gameId;
-//             resolve(gameId);  // Resolve with the new game ID
-//         });
-//     });
-// };
-
 // Create a new game and add the creator as a participant
 const createNewGame = async (createdBy, maxPlayers) => {
     try {
@@ -21,11 +8,10 @@ const createNewGame = async (createdBy, maxPlayers) => {
         const gameId = results[1][0].gameId;
         return gameId;
     } catch (err) {
-        const error = new Error('Error creating game');
+        const error = new Error(err.message);
         throw error;
     }
 }
-
 
 // Add a participant to a game
 // Return a participant object
@@ -36,7 +22,7 @@ const addParticipant = async (gameId, playerId) => {
         `;
         const [result] = await db.query(query, [gameId, playerId]);
         return result[0];
-    }catch (err) {
+    } catch (err) {
         const error = new Error('Error adding participant');
         throw error;
     }
@@ -97,7 +83,7 @@ const retrieveGameById = async (gameId) => {
 const gameExists = async (gameId) => {
     try {
         const query = `
-            SELECT * FROM games WHERE game_id = ?
+            SELECT 1 FROM games WHERE game_id = ?
         `;
         const [result] = await db.query(query, [gameId]);
         // console.log(result);
@@ -108,31 +94,24 @@ const gameExists = async (gameId) => {
     }
 }
 
-// // Check if player has active game where game status 'initialized' or 'started'
-// // Return true if player has active game, false otherwise
-// const checkIfPlayerHasActiveGame = async (playerId) => {
-//     try {
-//         const query = `
-//             SELECT COUNT(*) AS active_games
-//             FROM games G
-//             LEFT JOIN participants P ON G.game_id = P.game_id
-//             WHERE (G.created_by = ? OR P.player_id = ?)
-//             AND (G.status = 'not_active' OR G.status = 'initialized' OR G.status = 'started')
-//         `;
-//         const [results] = await db.query(query, [playerId, playerId]);
-//         return results[0].active_games > 0;
-//     } catch (error) {
-//         console.error('Error checking if player has active game:', error);
-//         // throw error;
-//     }
-// }
+// IT SUPPORTS ONLY 'ENDED' OR 'ABORTED' STATUS GIVEN BY CLIENT
+const updateGameStatus = async (gameId, status) => {
+    try {
+        await db.query('CALL updateGameStatus(?, ?)', [gameId, status]);
+        return;
+    } catch (err) {
+        // if (err.sqlState === '45000') 
+        const error = new Error(err.message);
+        throw error;
+    }
+}
 
 module.exports = {
     createNewGame,
     addParticipant,
     fetchGames,
     retrieveGameById,
+    updateGameStatus,
     gameExists,
-    // checkIfPlayerHasActiveGame,
     removeParticipant
 };

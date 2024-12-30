@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { getPlayerById } = require('../models/playersModel.js');
+const { gameExists } = require('../models/gamesModel.js');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const userSocketMap = new Map();
@@ -11,6 +12,15 @@ const socketioToken = async (socket, next) => {
     // *Note: Postman does not support socket.handshake.auth.token
     //  therefore we need to use socket.handshake.headers.token in order to check it
     const authHeader = socket.handshake.auth?.token || socket.handshake.headers?.token;
+    const gameId = socket.handshake.query?.gameId;
+
+    if (!gameId) {
+        return next(new Error(`gameId query is missing`));
+    }
+
+    if (!(await gameExists(gameId))) {
+        return next(new Error(`Game with id ${gameId} does not exist `));
+    }
 
     if (!authHeader || !authHeader.startsWith('Bearer')) {
         // console.error('SocketIO client trying to connect BUT... Token is missing');
@@ -33,6 +43,7 @@ const socketioToken = async (socket, next) => {
         }
 
         socket.user = decoded; // Attach decoded user to request
+        socket.gameID = gameId;
         userSocketMap.set(decoded.id, socket.id)    // Store user's socket id in a map
         next(); // Proceed to the next middleware or route handler
     } catch (error) {
@@ -46,7 +57,7 @@ const socketioToken = async (socket, next) => {
 // Get user's socket by user id
 const getUserSocket = (userId) => {
     return userSocketMap.get(userId);
- }
+}
 
 // Cleanup socketioUserMap when a user disconnects
 const removeUserSocketMap = (socket) => {
