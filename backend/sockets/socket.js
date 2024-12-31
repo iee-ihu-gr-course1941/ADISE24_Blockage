@@ -16,7 +16,7 @@ module.exports = (io) => {
                 socket.join(gameID)
                 socket.currentRoom = gameID;
                 console.log(`Joined in game/room '${gameID}' socket: '${socket.id}'`);
-                socket.emit('player-joined-successfully', { message: `Player with socket ID '${socket.id}' joined game '${gameID}' successfully` });
+                io.to(gameID).emit('player-joined-successfully', { message: `Player with socket ID '${socket.id}' joined game '${gameID}' successfully` });
             } else {
                 // create-game
                 socket.join(gameID)
@@ -33,7 +33,14 @@ module.exports = (io) => {
                 if (!status) {
                     return socket.emit('error', { message: 'status data field is required' });
                 }
-                
+                // const aliveSocketsOnGame = await io.in(gameID).fetchSockets();
+                // console.log(aliveSocketsOnGame);
+                // console.log(`Players in game '${gameID}' are:`);
+                // let counter = 0;
+                // for (let socket of aliveSocketsOnGame) {
+                //     console.log(`${counter}: ${socket.id}`);
+                //     counter++;
+                // }
                 await updateGameStatus(gameID, status);
                 io.of('/').in(gameID).disconnectSockets();
                 socket ? console.log(socket) : console.log('no socket');
@@ -51,6 +58,10 @@ module.exports = (io) => {
             removeUserSocketMap(socket);
             console.log('player with socket: ' + socket.id + ' disconnected');
             console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
+        });
+        socket.onAny((event, ...args) => {
+            console.log(`Event: ${event}, args: ${args}`);
+            socket.emit('error', {message : 'Invalid event name'});
         });
     });
 }
