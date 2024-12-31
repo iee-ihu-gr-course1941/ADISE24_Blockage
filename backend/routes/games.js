@@ -14,7 +14,7 @@ router.post('/create', createGame);
 router.post('/join', joinGame);
 
 // Leave a game
-router.delete('/leave/:gameId', leaveGame);
+router.delete('/leave/', leaveGame);
 
 // List all games
 router.get('/', listGames);

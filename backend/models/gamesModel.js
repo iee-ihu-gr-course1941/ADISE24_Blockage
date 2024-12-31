@@ -29,16 +29,16 @@ const addParticipant = async (gameId, playerId) => {
 };
 
 // Remove a participant from a game
-const removeParticipant = (playerId) => {
-    return new Promise((resolve, reject) => {
+const removeParticipant = async (playerId) => {
+    try {
         const query = `
             CALL RemoveParticipant(?)
         `;
-        db.query(query, [playerId], (err, results) => {
-            if (err) return reject(err);
-            resolve(results);
-        });
-    });
+        const [results] = await db.query(query, [playerId]);
+        return results;
+    } catch (err) {
+        throw new Error(err.message);
+    }
 };
 
 // Fetch all games
