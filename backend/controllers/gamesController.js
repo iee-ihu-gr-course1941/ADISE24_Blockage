@@ -14,7 +14,7 @@ const createGame = async (req, res) => {
     const { max_number_of_players } = req.body;
 
     if (!max_number_of_players || !['2', '4'].includes(max_number_of_players)) {
-        return res.status(400).json({ error: 'Invalid number of players. Only \'2\' or \'4\' are allowed' });
+        return res.status(400).json({ error: 'Invalid number of players. Only \'2\' or \'4\' are allowed', message: 'Data field: \'max_number_of_players\' is required' });
     }
 
     try {
@@ -26,15 +26,14 @@ const createGame = async (req, res) => {
             console.log(socketId);
             return res.status(400).json({ error: 'You have already a socket' });
         }
-        console.log(`No socket for user ${user.id}`);
 
         const gameId = await createNewGame(user.id, max_number_of_players);
         res.status(201).json({ message: 'Game created', gameId });
     } catch (error) {
+        // console.error('Error creating game:', error);
         if (error.sqlState === '45000') {
-            return res.status(400).json({ error: error.message, message: 'Error creating game.' });
+            return res.status(400).json({ error: error.message, message: 'sqlState: 45000 error on creating game.' });
         }
-        console.error('Error creating game:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -84,6 +83,7 @@ const listGames = async (req, res) => {
     }
 };
 
+// Retrieve a game by id
 const retrieveGame = async (req, res) => {
     const { gameId } = req.params;
     try {

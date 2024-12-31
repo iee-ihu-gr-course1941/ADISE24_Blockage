@@ -8,6 +8,11 @@ const createNewGame = async (createdBy, maxPlayers) => {
         const gameId = results[1][0].gameId;
         return gameId;
     } catch (err) {
+        if (err.sqlState === '45000') {
+            const error = new Error(err.message);
+            error.sqlState = err.sqlState;
+            throw error;
+        }
         const error = new Error(err.message);
         throw error;
     }
@@ -94,6 +99,8 @@ const gameExists = async (gameId) => {
     }
 }
 
+// Update game status
+// Return nothing
 // IT SUPPORTS ONLY 'ENDED' OR 'ABORTED' STATUS GIVEN BY CLIENT
 const updateGameStatus = async (gameId, status) => {
     try {
