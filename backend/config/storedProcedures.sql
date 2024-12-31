@@ -153,26 +153,41 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `removeParticipant`(
 BEGIN
     DECLARE gameId INT;
     DECLARE isCreator BOOLEAN;
+    DECLARE gameState ENUM('not_active', 'initialized', 'started', 'ended', 'aborted');
 
     START TRANSACTION;
 
-    -- Find the game ID the player is participating in
-    SELECT game_id, 
-           (created_by = playerId) AS isCreator 
-    INTO gameId, isCreator
-    FROM games 
-    WHERE game_id IN (
-        SELECT game_id 
-        FROM participants 
-        WHERE player_id = playerId
-    );
+    -- Find the game ID, state, and whether the player is the creator
+    SELECT g.game_id,
+           g.status,
+           (g.created_by = playerId) AS isCreator
+    INTO gameId, gameState, isCreator
+    FROM games g
+    WHERE g.game_id IN (
+        SELECT game_id
+        FROM participants p
+        WHERE p.player_id = playerId
+    ) AND g.status IN ('initialized', 'started')
+        LIMIT 1;
+
+    -- If no active game is found, raise an error
+    IF gameId IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Player is not a participant in any active game';
+    END IF;
+
+        -- Check if the game state allows the player to leave
+        IF gameState NOT IN ('initialized', 'started') THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Cannot leave a game that is not initialized or started';
+END IF;
 
     -- If the player is the creator, delete the game and cascade
     IF isCreator THEN
-        DELETE FROM games WHERE game_id = gameId;
+        DELETE FROM games g WHERE g.game_id = gameId;
     ELSE
         -- Otherwise, remove them from the participants table
-        DELETE FROM participants WHERE game_id = gameId AND player_id = playerId;
+        DELETE FROM participants p WHERE p.game_id = gameId AND p.player_id = playerId;
     END IF;
 
     COMMIT;
