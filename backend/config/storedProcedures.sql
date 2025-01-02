@@ -84,12 +84,15 @@ BEGIN
     -- Start transaction
     START TRANSACTION;
 
-    -- Check if the player is already in a game
+    -- Check if the player is already in an active game
     IF EXISTS (
-        SELECT 2 FROM participants WHERE player_id = playerId
-    ) THEN
+		SELECT 2
+        FROM participants p
+        JOIN games g ON p.game_id = g.game_id
+        WHERE p.player_id = ? AND g.status IN ('initialized', 'started')
+	) THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Player is already participating in another game';
+        SET MESSAGE_TEXT = 'Player is already participating in another active game';
     END IF;
 
     -- Check if the game is full

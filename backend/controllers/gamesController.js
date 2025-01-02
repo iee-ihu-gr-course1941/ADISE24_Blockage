@@ -21,11 +21,11 @@ const createGame = async (req, res) => {
         const io = req.app.get('io');
         console.log(io);
         // console.log(`Active sockets: ${io.sockets.sockets.size}`);
-        const socketId = getUserSocket(user.id)
-        if (socketId) {
-            console.log(socketId);
-            return res.status(400).json({ error: 'You have already a socket' });
-        }
+        // const socketId = getUserSocket(user.id)
+        // if (socketId) {
+        //     console.log(socketId);
+        //     return res.status(400).json({ error: 'You have already a socket' });
+        // }
 
         const gameId = await createNewGame(user.id, max_number_of_players);
         res.status(201).json({ message: 'Game created', gameId });

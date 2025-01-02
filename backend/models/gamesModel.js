@@ -13,8 +13,7 @@ const createNewGame = async (createdBy, maxPlayers) => {
             error.sqlState = err.sqlState;
             throw error;
         }
-        const error = new Error(err.message);
-        throw error;
+        throw new Error(err.message);
     }
 }
 
@@ -26,10 +25,29 @@ const addParticipant = async (gameId, playerId) => {
             CALL JoinGame(?, ?)
         `;
         const [result] = await db.query(query, [gameId, playerId]);
+        // console.log(result);
         return result[0];
     } catch (err) {
-        const error = new Error('Error adding participant');
-        throw error;
+        throw new Error(err.message);
+    }
+};
+
+// Check if a participant has an active game
+// Return true if partcipant is in the game, false otherwise
+const checkIfParticipantInTheGame = async (playerId, gameId) => {
+    try {
+        const query = `
+            SELECT  p.player_id, g.game_id, g.status
+            FROM games g INNER JOIN
+            participants p on (g.game_id=p.game_id)
+            WHERE p.player_id = ? AND p.game_id = ?
+            AND g.status IN ('initialized', 'started');
+        `;
+        const [results] = await db.query(query, [playerId, gameId]);
+        // console.log(results);
+        return results.length > 0;
+    } catch (err) {
+        throw new Error(err.message);
     }
 };
 
@@ -61,8 +79,7 @@ const fetchGames = async () => {
         const [results] = await db.query(query);
         return results;
     } catch (err) {
-        const error = new Error('Error retrieving games');
-        throw error;
+        throw new Error('Error retrieving games');
     }
 };
 
@@ -79,7 +96,8 @@ const retrieveGameById = async (gameId) => {
         // console.log(result[0]['game_id']);
         return result[0];
     } catch (err) {
-        console.error('Error retrieving game with ID:', err);
+        // console.error('Error retrieving game with ID:', err);
+        throw new Error(err.message);
     }
 }
 
@@ -95,7 +113,8 @@ const gameExists = async (gameId) => {
         // console.log(result.length);
         return result.length > 0;
     } catch (err) {
-        console.error('Error retrieving game with ID:', err);
+        // console.error('Error retrieving game with ID:', err);
+        throw new Error(err.message);
     }
 }
 
@@ -107,18 +126,25 @@ const updateGameStatus = async (gameId, status) => {
         await db.query('CALL updateGameStatus(?, ?)', [gameId, status]);
         return;
     } catch (err) {
-        // if (err.sqlState === '45000') 
-        const error = new Error(err.message);
-        throw error;
+        throw new Error(err.message);
     }
 }
 
+// const removeGame = async (gameId) => {
+//     try{
+//         await db.query('CALL removeGame(?)', [gameId]);
+//     }catch(err){
+//         throw new Error(err.message);
+//     }
+// }
+
 module.exports = {
     createNewGame,
-    addParticipant,
     fetchGames,
     retrieveGameById,
-    updateGameStatus,
     gameExists,
-    removeParticipant
+    updateGameStatus,
+    addParticipant,
+    removeParticipant,
+    checkIfParticipantInTheGame
 };

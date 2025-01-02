@@ -1,95 +1,155 @@
-const { gameExists, retrieveGameById, updateGameStatus } = require('../models/gamesModel');
-const { removeUserSocketMap } = require('../sockets/socketioAuthMiddleware.js');
+const {
+    retrieveGameById,
+    addParticipant,
+    checkIfParticipantInTheGame,
+    updateGameStatus,
+    removeParticipant
+} = require('../models/gamesModel');
+const { getUserSocket, removeUserSocketMap } = require('../sockets/socketioAuthMiddleware.js');
 
 module.exports = (io) => {
-
-    io.on('connection', (socket) => {
+    io.on('connection', async (socket) => {
         const { user, gameID } = socket;
         console.log(`User ${user.id}  with socketID: '${socket.id}' connected`);
         console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
         try {
             // Check if room already exists
+            // console.log(io.sockets.adapter.rooms);
             const roomExists = io.sockets.adapter.rooms.has(gameID);
             console.log(`Room ${gameID} exists: ${roomExists}`);
             if (roomExists) {
                 // player-join 
+
+                // For websocket reconnection purposes
+                // Check if player is already in the game
+                if (await checkIfParticipantInTheGame(user.id, gameID)) {
+                    // Check if player is already in the game with another socket
+                    if (getUserSocket(user.id)) {
+                        // If so disconnect the new socket and return
+                        console.log('THERE ARE 2 SOCKETS FOR THE SAME USER');
+                        socket.emit('error', { message: `Player '${user.playerName}' already in the game by other socket. You are disconnected by this one!` });
+                        removeUserSocketMap(socket);
+                        socket.disconnect();
+                        return;
+                    }
+                    // player is already in the game, rejoin
+                    socket.join(gameID);
+                    socket.currentRoom = gameID;
+                    console.log(`Rejoined in game/room '${gameID}' socket: '${socket.id}'`);
+                    io.to(gameID).emit('player-joined', { message: `Player '${user.playerName}' rejoined game '${gameID}' with socket '${socket.id}'` });
+                    console.log(io.sockets.adapter.rooms);
+                    return;
+                }
+                // player is not already in the game, So add him/her, join
+                await addParticipant(gameID, user.id);
                 socket.join(gameID)
                 socket.currentRoom = gameID;
                 console.log(`Joined in game/room '${gameID}' socket: '${socket.id}'`);
-                io.to(gameID).emit('player-joined-successfully', { message: `Player with socket ID '${socket.id}' joined game '${gameID}' successfully` });
+                io.to(gameID).emit('player-joined', { message: `Player '${user.playerName}' with socket ID '${socket.id}' joined game '${gameID}'` });
             } else {
                 // create-game
+                const game = await retrieveGameById(gameID);
+                if (game.status !== 'initialized') {
+                    throw new Error(`Game with ID ${gameID} is not in status 'initialized', cannot create room for it`);
+                }
                 socket.join(gameID)
                 socket.currentRoom = gameID;
                 console.log(`Created game/room '${gameID}' by socket: '${socket.id}'`);
-                socket.emit('game-created-successfully', { message: `Player with socket ID '${socket.id}' created game '${gameID}' successfully` });
+                socket.emit('game-created', { message: `Player '${user.playerName}' with socket ID '${socket.id}' created game '${gameID}'` });
             }
         } catch (error) {
             console.error(`Error creating game for socket: ${socket.id}`, error);
-            socket.emit('error', { message: 'Error creating game' });
+            socket.emit('error', { error: error.message, message: `Error creating game or adding participant for player '${user.playerName}'` });
+            removeUserSocketMap(socket);
+            socket.disconnect();
         }
+        socket.on('player-left', async () => {
+            // Check if game exists & has status 'initialized'
+            try {
+                const game = await retrieveGameById(gameID);
+                if (game.game_id && game.status === 'initialized') {
+                    // Check if player is in the room
+                    if (checkIfAlreadyInActiveRoom(socket)) {
+                        // Remove player's db record from the game
+
+                        // Check if player is creator
+                        if (game.status = 'initialized' && game.created_by === user.id) {
+                            // Remove participants of the game and the game itself
+
+                            // REMOVES ALL THE PARTICIPANTS OF THE GAME AND GAME BECAUSE THIS PLAYER IS THE CREATOR! 
+                            // CAUSED BY: (stored procedure CONSTRAINT: deletes every participant of the same game and the game itself)
+                            await removeParticipant(user.id);
+
+                            const roomSockets = await io.in(gameID).fetchSockets();
+                            // console.log(gameSockets);
+                            for (let playerSocket of roomSockets) {
+                                removePlayerFromRoom(playerSocket, io);
+                                playerSocket.disconnect();
+                            }
+                            return;
+                        }
+                        // Remove participant from the game
+                        await removeParticipant(user.id);
+                        // Remove player from the room and then disconnect his/her socket
+                        removePlayerFromRoom(socket, io);
+                        socket.disconnect();
+                    } else {
+                        socket.emit('error', { message: 'Error leaving game, you are not in an active room' });
+                    }
+                } else {
+                    socket.emit('error', { message: `Error leaving game, game does not exist or is not in status 'initialized'` });
+                }
+            } catch (error) {
+                console.error(`Error leaving game for socket: ${socket.id}`, error);
+                socket.emit('error', { error: error.message, message: 'Error leaving game' });
+            }
+        });
         socket.on('game-ended', async ({ status }) => {
             try {
                 if (!status) {
                     return socket.emit('error', { message: 'status data field is required' });
                 }
-                // const aliveSocketsOnGame = await io.in(gameID).fetchSockets();
-                // console.log(aliveSocketsOnGame);
-                // console.log(`Players in game '${gameID}' are:`);
-                // let counter = 0;
-                // for (let socket of aliveSocketsOnGame) {
-                //     console.log(`${counter}: ${socket.id}`);
-                //     counter++;
-                // }
                 await updateGameStatus(gameID, status);
                 io.of('/').in(gameID).disconnectSockets();
-                socket ? console.log(socket) : console.log('no socket');
             } catch (error) {
                 console.error(`Error ending game for socket: ${socket.id}`, error);
                 socket.emit('error', { error: error.message, message: 'Error ending game' });
             }
         });
-        // TODO
-        socket.on('player-left', () => {
-            checkIfAlreadyInActiveGame(socket, io);
-        });
         socket.on('disconnect', () => {
-            checkIfAlreadyInActiveGame(socket, io);
-            removeUserSocketMap(socket);
-            console.log('player with socket: ' + socket.id + ' disconnected');
-            console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
+            // Check if player belongs in the room
+            if (checkIfAlreadyInActiveRoom(socket)) {
+                // Remove player from the room
+                removePlayerFromRoom(socket, io);
+                console.log('player with socket: ' + socket.id + ' disconnected');
+                console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
+            }
         });
+        // Check if provided by client event name is valid
+        // Return error message to socket
+        // For Development purposes!
+        const validEvents = ['player-left', 'game-ended', 'disconnect'];
         socket.onAny((event, ...args) => {
+            if ((validEvents.includes(event)))
+                return;
             console.log(`Event: ${event}, args: ${args}`);
-            socket.emit('error', {message : 'Invalid event name'});
+            socket.emit('error', { message: 'Invalid event name' });
         });
     });
 }
 
-// const createAndJoinGameValidation = async (socket, gameId) => {
-//     // check if game with id 'gameId' of message field exists
-//     if (!gameId) {
-//         socket.emit('error', { message: 'gameId data field is required' });
-//         return false;
-//     }
 
-//     // check if game with id 'gameId' exists in db
-//     const exists = await gameExists(gameId)
-//     if (!exists) {
-//         socket.emit('error', { message: `Game with id '${gameId}' does not exist` });
-//         return false;
-//     }
-//     return true;
-// }
+// Check if socket is already in a room
+const checkIfAlreadyInActiveRoom = (socket) => {
+    return socket.currentRoom ? true : false;
+}
 
-const checkIfAlreadyInActiveGame = (socket, io) => {
-    // check if user-socket is already in a room-game with status 'initialized' or 'started'
-    // If so, then remove this socket from the current room and emit 'player-left' event
-    if (socket.currentRoom) {
-        const currentRoom = socket.currentRoom;
-        socket.leave(socket.currentRoom);
-        console.log(`player with socket: '${socket.id}' left from game: ${socket.currentRoom}`);
-        io.to(currentRoom).emit('player-left', { message: `Player with socketId: '${socket.id}' and name: '${socket.user.playerName}' left the game ${currentRoom}` });
-        socket.currentRoom = null;
-    }
+// Remove the passed socket from the current room and emit 'player-left' event to the room
+const removePlayerFromRoom = (socket, io) => {
+    const currentRoom = socket.currentRoom;
+    removeUserSocketMap(socket);
+    socket.leave(socket.currentRoom);
+    console.log(`player with socket ID: '${socket.id}' left from game: ${socket.currentRoom}`);
+    socket.currentRoom = null;
+    io.to(currentRoom).emit('player-left', { message: `Player with socket ID: '${socket.id}' and name: '${socket.user.playerName}' left the game '${currentRoom}'` });
 }
