@@ -22,7 +22,7 @@ module.exports = (io) => {
                 socket.join(gameID)
                 socket.currentRoom = gameID;
                 console.log(`Created game/room '${gameID}' by socket: '${socket.id}'`);
-                socket.emit('game-created-successfully', { message: `Player with socker ID '${socket.id}' created game '${gameID}' successfully` });
+                socket.emit('game-created-successfully', { message: `Player with socket ID '${socket.id}' created game '${gameID}' successfully` });
             }
         } catch (error) {
             console.error(`Error creating game for socket: ${socket.id}`, error);
