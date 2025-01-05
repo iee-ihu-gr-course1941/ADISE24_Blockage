@@ -4,10 +4,23 @@ const {
     normalizeCoordinates,
     visualizeTile,
     getTileById,
+    allocateTiles,
+    placeTile,
+    reloadGameState,
+    initializeBoard,
+    validateTilePlacement,
+    visualizeBoard,
+    constructBoard,
     tiles,
 } = require('../utils/tileUtils');
 
-// const tile = [[0, 0], [1, 0], [2, 0], [1, 1],  [1, 2]];
+const prompt = require("prompt-sync")();
+
+function interactiveTileTest() {
+    const tileId = parseInt(prompt("Enter a Tile ID to test: "), 10);
+    testTileById(tileId);
+}
+
 function testTileById(tileId) {
     try {
         // Get the tile by ID
@@ -44,13 +57,35 @@ function testTileById(tileId) {
     }
 }
 
-const prompt = require("prompt-sync")();
+async function main() {
+    try {
+        allocateTiles(1, [{ player_id: 1 }, { player_id: 2 }]);
+        let board = await constructBoard(1, 20, 20); // Wait for the promise to resolve
 
-function interactiveTileTest() {
-    const tileId = parseInt(prompt("Enter a Tile ID to test: "), 10);
-    testTileById(tileId);
+        // Visualize the board
+        visualizeBoard(board);
+
+        await reloadGameState(1)
+
+        // Validate tile placement
+        const validationResult = await validateTilePlacement(board,1, 1, 1, 19, 19, 1, "0");
+
+        if (validationResult.valid) {
+            console.log('Placement is valid!');
+            // Update the board state
+            await placeTile(1, 1, 1, 19, 19, 1, '0');
+        }
+        else {
+            console.log('Invalid placement:', validationResult.reason);
+        }
+
+        board = await constructBoard(1, 20, 20); // Wait for the promise to resolve
+
+        // Visualize the board
+        visualizeBoard(board);
+    } catch (error) {
+        console.error('Error visualizing the board:', error.message);
+    }
 }
 
-interactiveTileTest();
-
-
+main();
