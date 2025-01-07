@@ -1,0 +1,83 @@
+/* General styles for the room list */
+.dashboard-content {
+  margin: 5px 20px 0px;
+}
+
+.room-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  min-height: 600px;
+  padding: 10px;
+  margin: 0px;
+  justify-content: start;
+  /* justify-content: space-around; */
+  border: 2px solid var(--bg-thirdary);
+  border-radius: 2px;
+}
+
+.room-card {
+  min-width: 220px;
+  border: 2px solid var(--text-thirdary);
+  border-radius: 8px;
+  background-color: #f0f8ff;
+  padding: 15px;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.room-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+}
+
+.room-card h3 {
+  font-size: 18px;
+  margin: 2px 0 5px;
+  color: var(--text-thirdary);
+}
+
+.participants-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.participant-container .player-name {
+  font-size: 14px;
+  margin: 5px 0;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.join-button {
+  background-color: var(--bg-secondary);
+  color: #E2F6FF;
+  border: 2px solid var(--bg-secondary);
+  padding: 10px 15px;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.5s;
+}
+
+.join-button:hover {
+  background-color: var(--bg-secondary-shadow);
+}
+
+.join-button:active {
+  background-color: var(--white);
+  color: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.join-button:disabled {
+  background-color: var(--disabled);
+  cursor: not-allowed;
+  pointer-events: none;
+}

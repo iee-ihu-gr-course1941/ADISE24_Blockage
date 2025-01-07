@@ -72,9 +72,13 @@ module.exports = (io) => {
                 console.log(`Joined in game/room '${gameID}' socket: '${socket.id}'`);
                 io.to(gameID).emit('player-joined', { message: `Player '${user.playerName}' with socket ID '${socket.id}' joined game '${gameID}'` });
 
+                // !!!There is a trigger in the db that checks if max number of players is reached and changes the status of the game to 'started'
+
+                // Check if game has started
                 const game = await retrieveGameById(gameID);
 
                 if (game.status === 'started') {
+                    // Game has started (max player limit of corresponding game reached). Allocate tiles and notify participants
 
                     const participants = await retrieveParticipantsIds(gameID);
 
@@ -108,13 +112,14 @@ module.exports = (io) => {
                 socket.emit('game-created', { message: `Player '${user.playerName}' with socket ID '${socket.id}' created game '${gameID}'` });
             }
         } catch (error) {
+            // Error handling and emitting error message to the socket
             console.error(`Error creating game for socket: ${socket.id}`, error);
             socket.emit('error', { error: error.message, message: `Error creating game or adding participant for player '${user.playerName}'` });
             removeUserSocketMap(socket);
             socket.disconnect();
         }
         socket.on('player-left', async () => {
-            // Check if game exists & has status 'initialized'
+            // Check if game exists & has status 'initialized' - Player can leave ONLY from a game with status 'initialized'
             try {
                 const game = await retrieveGameById(gameID);
                 if (game.game_id && game.status === 'initialized') {
@@ -128,19 +133,17 @@ module.exports = (io) => {
                             socket.to(gameID).emit('game-deleted', { message: `Game '${game.game_id}' deleted by its creator '${user.playerName}'` });
                             const roomSockets = await io.in(gameID).fetchSockets();
                             // afinei teleytaio to room socket toy leader na diagrafei
-                            // console.log(roomSockets.reverse());
-                            console.log(roomSockets);
+
+                            // console.log(roomSockets);
                             for (let playerSocket of roomSockets) {
-                                // removePlayerFromRoom(playerSocket, io);
-                                const currentRoom = socket.currentRoom;
                                 removeUserSocketMap(socket);
                                 socket.leave(socket.currentRoom);
                                 console.log(`player with socket ID: '${socket.id}' left from game: ${socket.currentRoom}`);
                                 socket.currentRoom = null;
                                 playerSocket.disconnect();
                             }
-                            // // REMOVES ALL THE PARTICIPANTS OF THE GAME AND GAME BECAUSE THIS PLAYER IS THE CREATOR! 
-                            // // CAUSED BY: (stored procedure CONSTRAINT: deletes every participant of the same game and the game itself)
+                            // REMOVES ALL THE PARTICIPANTS OF THE GAME AND GAME BECAUSE THIS PLAYER IS THE CREATOR! 
+                            // CAUSED BY: (stored procedure CONSTRAINT: deletes every participant of the same game and the game itself)
                             await removeParticipant(user.id);
                             return;
                         }
@@ -149,7 +152,6 @@ module.exports = (io) => {
                         // Remove player from the room and then disconnect his/her socket
                         removePlayerFromRoom(socket, io);
                         socket.disconnect();
-
                     } else {
                         socket.emit('error', { message: 'Error leaving game, you are not in an active room' });
                     }
@@ -182,7 +184,6 @@ module.exports = (io) => {
                 console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
             }
         });
-
         socket.on('place-tile', async ({ tileId, anchorX, anchorY, mirror, rotate }) => {
             try {
 

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="./assets/css/global.css">
+    <link rel="stylesheet" type="text/css" href="./assets/css/dashboard/dashboard.css">
+    <link rel="stylesheet" type="text/css" href="./assets/css/dashboard/room-list.css">
+    <link rel="stylesheet" type="text/css" href="./assets/css/dashboard/lobby.css">
+    <script type="module" src="./js/components/dashboard/dashboard.js"></script>
+    <title>Dashboard</title>
+</head>
+
+<body>
+    <header>
+        <h1>Blockage</h1>
+        <div class="user-info">
+            <p>Player: </p>
+            <span id="player-name">UNKNOWN</span>
+        </div>
+        <button id="logout-button">Logout</button>
+    </header>
+    <main>
+        <div class="dashboard-header">
+            <div class="dropdown">
+                <button id="dropdown-button">View</button>
+                <div id="dropdown-content">
+                    <div data-value="In Lobby">In Lobby</div>
+                    <div data-value="In Game">In Game</div>
+                    <div data-value="Both">Both</div>
+                </div>
+            </div>
+            <h2>DASHBOARD</h2>
+            <button id="create-room-button">CREATE</button>
+        </div>
+        <div class="dashboard-content">
+            <div id="room-list" class="room-list">
+                <!-- Dynamic rooms will be added here by JavaScript -->
+            </div>
+        </div>
+        <!-- Lobby Card (Initially Hidden) -->
+        <div id="dashboard-overlay" class="hidden">
+
+        </div>
+        <div id="lobby-card" class="hidden">
+
+        </div>
+        <!-- <footer>
+            <p>© 2024 Blockage. All rights reserved.</p>
+        </footer> -->
+    </main>
+</body>
+
+</html>

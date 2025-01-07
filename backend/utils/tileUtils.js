@@ -67,7 +67,7 @@ function mirrorTile(tile, axis = 0) {
     });
 }
 
-
+// absolute coordinates
 function normalizeCoordinates(coordinates) {
     const minX = Math.min(...coordinates.map(([x]) => x));
     const minY = Math.min(...coordinates.map(([_, y]) => y));

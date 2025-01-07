@@ -1,0 +1,132 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--bg-primary);
+    color: var(--black);
+    height: 100vh;
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: var(--bg-thirdary);
+    color: var(--white);
+}
+
+header h1 {
+    margin: 0;
+}
+
+header .user-info {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+header span {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+header #logout-button {
+    background-color: #3b6ef5;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+header #logout-button:hover {
+    background-color: #294ac7;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px 20px 5px;
+    background-color: var(--bg-primary);
+}
+
+/* Dropdown */
+.dropdown {
+    position: relative;
+}
+
+#dropdown-button {
+    background-color: #D9EEF8;
+    color: var(--text-secondary);
+    border: 2px solid var(--text-secondary);
+    padding: 5px 15px;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: var(--bg-primary-shadow);
+    min-width: 150px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+#dropdown-content div {
+    color: var(--bg-thirdary);
+    padding: 12px 16px;
+    font-size: 14px;
+    text-align: center;
+    cursor: pointer;
+}
+
+#dropdown-content div:hover {
+    background-color: #f1f1f1
+}
+
+.dropdown:hover #dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .dropdown-button {
+    background-color: #bed1da;
+}
+
+.dashboard-header h2 {
+    color: var(--bg-thirdary);
+    font-weight: bold;
+}
+
+.dashboard-header #create-room-button {
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--bg-secondary);
+    color: white;
+    padding: 5px 15px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.dashboard-header #create-room-button:hover {
+    background-color: #3b6ef5;
+    border: 2px solid #3b6ef5;
+    transition: background-color 0.2s;
+}
+.dashboard-header #create-room-button:active {
+        background-color: var(--bg-primary);
+        color: #3b6ef5;
+        border: 2px solid #3b6ef5;
+}
+
+/* Room List in the corresponding css file*/
+/* Lobby Card in the corresponding css file*/

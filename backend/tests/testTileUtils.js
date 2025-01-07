@@ -46,13 +46,13 @@ function testTileById(tileId) {
         rotatedTile = rotateTile(tile, -270);
         visualizeTile(rotatedTile);
 
-        console.log("\nHorizontally Mirrored:");
-        const mirroredTile = mirrorTile(tile, "horizontal");
+        console.log("\n Mirrored:");
+        const mirroredTile = mirrorTile(tile, 1);
         visualizeTile(mirroredTile);
 
-        console.log("\nVertically Mirrored:");
-        const verticallyMirroredTile = mirrorTile(tile, "vertical");
-        visualizeTile(verticallyMirroredTile);
+        // console.log("\nVertically Mirrored:");
+        // const verticallyMirroredTile = mirrorTile(tile, "vertical");
+        // visualizeTile(verticallyMirroredTile);
 
     } catch (error) {
         console.error(error.message);
@@ -97,4 +97,5 @@ async function main() {
     }
 }
 
-main();
+// main();
+interactiveTileTest();

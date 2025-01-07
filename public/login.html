@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" type="text/css" href="./assets/css/global.css">
+    <link rel="stylesheet" href="./assets/css/global.css">
+    <link rel="stylesheet" href="./assets/css/login.css">
+    <script type="module">
+        import login from './js/components/login.js';
+        login();
+    </script>
+</head>
+
+<body>
+    <header>
+        <h1> Blockage</h1>
+    </header>
+    <div class="welcome-container">
+        <h2>Welcome on Blockage</h2>
+        <h3>How to play?</h3>
+        <p>Each player has a set of 21 pieces in a specific color, and the goal is to place all of your pieces on the
+            board while blocking your opponents. The game is easy to learn but offers endless strategic possibilities,
+            making it fun for players of all ages. Join now and test your skills against players from around the world!
+        </p>
+    </div>
+    <div class="login-container">
+
+        <div class="heading">Sign in as Guest</div>
+
+        <form action="" id="login-form">
+            <input required="" type="player-name" name="player-name" id="player-name" placeholder="Name">
+            <!-- <input required="" class="input" type="userame" name="userame" id="userame" placeholder="userame"> -->
+            <!-- <input required="" class="input" type="password" name="password" id="password" placeholder="Password"> -->
+
+            <button id="login-button" type="submit">Sign In</button>
+        </form>
+
+        <div class="social-account-container">
+
+            <p class="title">Or Sign in with:</p>
+
+            <div class="social-accounts">
+
+                <button class="social-button-apps">
+                    <img alt="apps-logo" src="./assets/images/apps-logo.png">
+                </button>
+            </div>
+
+        </div>
+        <p id="error-message"></p>
+    </div>
+    <!-- <footer>
+        <p>© 2024 Blockage. All rights reserved.</p>
+    </footer> -->
+</body>
+
+</html>
