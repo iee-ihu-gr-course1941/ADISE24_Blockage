@@ -1,11 +1,36 @@
 const {
+    createNewGame,
+    retrieveGames,
     retrieveGameById,
-    addParticipant,
-    checkIfParticipantInTheGame,
+    gameExists,
     updateGameStatus,
-    removeParticipant
+    addParticipant,
+    removeParticipant,
+    checkIfParticipantInTheGame,
+    retrievePlacedTiles,
+    retrieveParticipantsIds,
+    retrievePlayerColors,
+    retrievePlayerScores
 } = require('../models/gamesModel');
 const { getUserSocket, removeUserSocketMap } = require('../sockets/socketioAuthMiddleware.js');
+const {
+    rotateTile,
+    mirrorTile,
+    normalizeCoordinates,
+    visualizeTile,
+    getTileById,
+    allocateTiles,
+    placeTile,
+    reloadGameState,
+    initializeBoard,
+    validateTilePlacement,
+    visualizeBoard,
+    constructBoard,
+    generateTileTransformations,
+    checkNoRemainingMoves,
+    tiles,
+    gameTiles
+} = require('../utils/tileUtils');
 
 module.exports = (io) => {
     io.on('connection', async (socket) => {
@@ -46,6 +71,31 @@ module.exports = (io) => {
                 socket.currentRoom = gameID;
                 console.log(`Joined in game/room '${gameID}' socket: '${socket.id}'`);
                 io.to(gameID).emit('player-joined', { message: `Player '${user.playerName}' with socket ID '${socket.id}' joined game '${gameID}'` });
+
+                const game = await retrieveGameById(gameID);
+
+                if (game.status === 'started') {
+
+                    const participants = await retrieveParticipantsIds(gameID);
+
+                    // Allocate tiles to participants
+                    allocateTiles(gameID, participants);
+
+                    // Construct the empty board
+                    const board = await constructBoard(gameID);
+
+                    // Notify all participants that the game has started
+                    io.to(gameID).emit('game-started', {
+                        message: `Game '${gameID}' has started.`,
+                        board: board,
+                        tiles: gameTiles[gameID], // In-memory tiles for each player
+                        turn: game.player_turn,
+                    });
+
+                    console.log(`Game '${gameID}' started, participants notified and tiles allocated.`);
+                }
+
+
             } else {
                 // create-game
                 const game = await retrieveGameById(gameID);
@@ -99,6 +149,7 @@ module.exports = (io) => {
                         // Remove player from the room and then disconnect his/her socket
                         removePlayerFromRoom(socket, io);
                         socket.disconnect();
+
                     } else {
                         socket.emit('error', { message: 'Error leaving game, you are not in an active room' });
                     }
@@ -131,10 +182,58 @@ module.exports = (io) => {
                 console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
             }
         });
+
+        socket.on('place-tile', async ({ tileId, anchorX, anchorY, mirror, rotate }) => {
+            try {
+
+                // Construct the board state
+                const board = await constructBoard(gameID);
+
+                // Validate tile placement
+                const validationResult = await validateTilePlacement(
+                    board,
+                    gameID,
+                    user.id,
+                    tileId,
+                    anchorX,
+                    anchorY,
+                    mirror,
+                    rotate
+                );
+                if (!validationResult.valid) {
+                    socket.emit('error', { message: validationResult.reason });
+                    return;
+                }
+
+                // Place the tile
+                await placeTile(gameID, user.id, tileId, anchorX, anchorY, mirror, rotate);
+
+                // Update the scores
+                const updatedScores = await retrievePlayerScores(gameID);
+
+                // Determine the next player's turn
+                const updatedGame = await retrieveGameById(gameID);
+
+                // Broadcast the unified event to all players in the game room
+                const updatedBoard = await constructBoard(gameID);
+
+                io.to(gameID).emit('game-update', {
+                    board: updatedBoard,
+                    scores: updatedScores,
+                    nextPlayerTurn: updatedGame.player_turn,
+                });
+
+                console.log(`Move broadcasted: Player ${user.id} placed tile ${tileId} in game ${gameID}`);
+            } catch (error) {
+                console.error('Error handling tile placement:', error.message);
+                socket.emit('error', { message: 'Tile placement failed', error: error.message });
+            }
+        });
+
         // Check if provided by client event name is valid
         // Return error message to socket
         // For Development purposes!
-        const validEvents = ['player-left', 'game-ended', 'disconnect'];
+        const validEvents = ['place-tile', 'player-left', 'game-ended', 'disconnect'];
         socket.onAny((event, ...args) => {
             if ((validEvents.includes(event)))
                 return;

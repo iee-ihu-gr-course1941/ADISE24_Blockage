@@ -25,7 +25,6 @@ const addParticipant = async (gameId, playerId) => {
             CALL JoinGame(?, ?)
         `;
         const [result] = await db.query(query, [gameId, playerId]);
-        // console.log(result);
         return result[0];
     } catch (err) {
         throw new Error(err.message);
@@ -66,12 +65,12 @@ const removeParticipant = async (playerId) => {
 
 // Fetch all games
 // Return a list of games objects
-const fetchGames = async () => {
+const retrieveGames = async () => {
     try {
         const query = `
             SELECT g.game_id, g.created_by, g.status, g.max_number_of_players, COUNT(p.player_id) AS current_players
             FROM games g
-            LEFT JOIN participants p ON g.game_id = p.game_id
+                     LEFT JOIN participants p ON g.game_id = p.game_id
             GROUP BY g.game_id
         `;
         const [results] = await db.query(query);
@@ -83,7 +82,7 @@ const fetchGames = async () => {
 
 // Retrieve all games by status
 // Return a list of games objects
-const fetchGamesByStatus = async (status) => {
+const retrieveGamesByStatus = async (status) => {
     try {
         const query = `
         SELECT * 
@@ -198,18 +197,65 @@ const updateGameStatus = async (gameId, status) => {
     }
 }
 
-// const removeGame = async (gameId) => {
-//     try{
-//         await db.query('CALL removeGame(?)', [gameId]);
-//     }catch(err){
-//         throw new Error(err.message);
-//     }
-// }
+
+const retrievePlacedTiles = async (gameId) => {
+    try {
+        const [results] = await db.query('SELECT * FROM placed_tiles WHERE game_id = ?', [gameId]);
+        return results;
+    } catch (err) {
+        const error = new Error('Failed to fetch game data');
+        throw error;
+    }
+}
+
+const retrieveParticipantsIds = async (gameId) => {
+    try {
+        const [results] = await db.query(
+            'SELECT player_id FROM participants WHERE game_id = ?',
+            [gameId]
+        );
+        return results;
+    } catch (err) {
+        throw new Error('Failed to fetch participants');
+    }
+}
+
+const retrievePlayerColors = async (gameId) => {
+    try {
+        const [results] = await db.query(
+            'SELECT player_id, color FROM participants WHERE game_id = ?',
+            [gameId]
+        );
+        const playerColors = {};
+        results.forEach(({ player_id, color }) => {
+            playerColors[player_id] = color;
+        });
+        return playerColors;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const retrievePlayerScores = async (gameId) => {
+    try {
+        const [results] = await db.query(
+            'SELECT player_id, score FROM participants WHERE game_id = ?',
+            [gameId]
+        );
+        const playerScores = {};
+        results.forEach(({ player_id, score }) => {
+            playerScores[player_id] = score;
+        });
+        return playerScores;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
 
 module.exports = {
     createNewGame,
-    fetchGames,
-    fetchGamesByStatus,
+    retrieveGames,
+    retrieveGamesByStatus,
     retrieveGameById,
     gameExists,
     updateGameStatus,
@@ -217,5 +263,9 @@ module.exports = {
     addParticipant,
     removeParticipant,
     checkIfParticipantInTheGame,
-    retrieveParticipantsOfGamesByStatus
+    retrieveParticipantsOfGamesByStatus,
+    retrievePlacedTiles,
+    retrieveParticipantsIds,
+    retrievePlayerColors,
+    retrievePlayerScores
 };

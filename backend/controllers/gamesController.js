@@ -1,8 +1,8 @@
 const {
     createNewGame,
     addParticipant,
-    fetchGames,
-    fetchGamesByStatus,
+    retrieveGames,
+    retrieveGamesByStatus,
     retrieveGameById,
     retrieveParticipantsByGameId,
     retrieveParticipantsOfGamesByStatus,
@@ -67,7 +67,7 @@ const leaveGame = async (req, res) => {
 // List all games
 const listGames = async (req, res) => {
     try {
-        const games = await fetchGames();
+        const games = await retrieveGames();
         res.status(200).json({ games });
     } catch (error) {
         console.error('Error fetching games:', error);
@@ -89,7 +89,7 @@ const listGamesByStatus = async (req, res) => {
                 return res.status(400).json({ error: `Invalid status. Only 'initialized' or 'started' or 'initialized-started' are allowed` });
             }
         }
-        const games = await fetchGamesByStatus(arrayStatus ? arrayStatus : status);
+        const games = await retrieveGamesByStatus(arrayStatus ? arrayStatus : status);
         res.status(200).json({ games });
     } catch (error) {
         console.error('Error fetching games:', error);
