@@ -75,17 +75,23 @@ module.exports = (io) => {
                         // Check if player is creator
                         if (game.status = 'initialized' && game.created_by === user.id) {
                             // Remove participants of the game and the game itself
-
-                            // REMOVES ALL THE PARTICIPANTS OF THE GAME AND GAME BECAUSE THIS PLAYER IS THE CREATOR! 
-                            // CAUSED BY: (stored procedure CONSTRAINT: deletes every participant of the same game and the game itself)
-                            await removeParticipant(user.id);
-
+                            socket.to(gameID).emit('game-deleted', { message: `Game '${game.game_id}' deleted by its creator '${user.playerName}'` });
                             const roomSockets = await io.in(gameID).fetchSockets();
-                            // console.log(gameSockets);
+                            // afinei teleytaio to room socket toy leader na diagrafei
+                            // console.log(roomSockets.reverse());
+                            console.log(roomSockets);
                             for (let playerSocket of roomSockets) {
-                                removePlayerFromRoom(playerSocket, io);
+                                // removePlayerFromRoom(playerSocket, io);
+                                const currentRoom = socket.currentRoom;
+                                removeUserSocketMap(socket);
+                                socket.leave(socket.currentRoom);
+                                console.log(`player with socket ID: '${socket.id}' left from game: ${socket.currentRoom}`);
+                                socket.currentRoom = null;
                                 playerSocket.disconnect();
                             }
+                            // // REMOVES ALL THE PARTICIPANTS OF THE GAME AND GAME BECAUSE THIS PLAYER IS THE CREATOR! 
+                            // // CAUSED BY: (stored procedure CONSTRAINT: deletes every participant of the same game and the game itself)
+                            await removeParticipant(user.id);
                             return;
                         }
                         // Remove participant from the game

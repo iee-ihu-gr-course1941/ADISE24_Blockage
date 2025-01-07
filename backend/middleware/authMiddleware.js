@@ -8,7 +8,7 @@ const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authorization token is missing or invalid' });
+        return res.status(401).json({ error: 'Authorization token is missing or invalid, Please login again!' });
     }
 
     const token = authHeader.split(' ')[1];
@@ -29,7 +29,7 @@ const authenticateToken = async (req, res, next) => {
         next(); // Proceed to the next middleware or route handler
     } catch (error) {
         console.error('Token verification failed:', error);
-        return res.status(403).json({ error: 'Invalid token' });
+        return res.status(401).json({ error: 'Invalid Token' });
     }
 };
 

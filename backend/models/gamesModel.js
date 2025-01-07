@@ -66,8 +66,6 @@ const removeParticipant = async (playerId) => {
 
 // Fetch all games
 // Return a list of games objects
-
-// FIX THIS QUERY -- There must be a fetchGames to retrieve only games with status 'intiatialized' or 'started'
 const fetchGames = async () => {
     try {
         const query = `
@@ -82,6 +80,24 @@ const fetchGames = async () => {
         throw new Error('Error retrieving games');
     }
 };
+
+// Retrieve all games by status
+// Return a list of games objects
+const fetchGamesByStatus = async (status) => {
+    try {
+        const query = `
+        SELECT * 
+        FROM games g
+        WHERE g.status IN (?)
+        `;
+        const [results] = await db.query(query, [status]);
+        console.log(results);
+        return results;
+    } catch (err) {
+        throw new Error(`Error retrieving games: ${err.message}`);
+    }
+};
+
 
 
 // Retrieve game by id
@@ -100,6 +116,58 @@ const retrieveGameById = async (gameId) => {
         throw new Error(err.message);
     }
 }
+
+// Retrieve participants of a game by game id
+// Return the participants's name and color
+
+// ON MERGE WITH BILLY ASK HIM -> CONVENTION MUST BE DONE
+const retrieveParticipantsByGameId = async (gameId) => {
+    try {
+        const query = `
+            SELECT pl.player_name, p.color
+            FROM participants p
+            INNER JOIN players pl ON p.player_id = pl.player_id
+            WHERE p.game_id = ?
+        `;
+        const [result] = await db.query(query, [gameId]);
+        // console.log(result);
+        return result;
+    } catch (err) {
+
+        throw new Error(err.message);
+    }
+};
+
+// Retrieve participants of games by status
+const retrieveParticipantsOfGamesByStatus = async (status) => {
+    try {
+        const query = `
+            SELECT g.game_id
+            FROM games g
+            WHERE g.status IN (?);
+        `;
+        const [results] = await db.query(query, [status]);
+        console.log(results);
+
+        let participantsArray = [];
+        for (let result of results) {
+            const query2 = `
+            SELECT p.game_id, p.player_id, pl.player_name, p.color
+            FROM participants p 
+            INNER JOIN players pl ON p.player_id = pl.player_id
+            WHERE p.game_id = ?
+        `
+            const [result2] = await db.query(query2, [result.game_id]);
+            // console.log(result2);
+            participantsArray.push(result2);
+        }
+        console.log(participantsArray);
+        return participantsArray;
+    } catch (err) {
+
+        throw new Error(err.message);
+    }
+};
 
 // Check if game exists
 // Return true if game exists, false otherwise
@@ -141,10 +209,13 @@ const updateGameStatus = async (gameId, status) => {
 module.exports = {
     createNewGame,
     fetchGames,
+    fetchGamesByStatus,
     retrieveGameById,
     gameExists,
     updateGameStatus,
+    retrieveParticipantsByGameId,
     addParticipant,
     removeParticipant,
-    checkIfParticipantInTheGame
+    checkIfParticipantInTheGame,
+    retrieveParticipantsOfGamesByStatus
 };
