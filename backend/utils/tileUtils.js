@@ -1,5 +1,6 @@
 const {fetchPlacedTiles, fetchParticipants, fetchPlayerColors} = require('../models/gamesModel');
 const Mutex = require('async-mutex').Mutex;
+const db = require('../config/db');
 const gameLocks = {}; // Mutex for each game and player
 
 
@@ -121,33 +122,40 @@ async function placeTile(gameId, playerId, tileId, anchorX, anchorY, mirror, rot
 
     const lock = gameLocks[key];
     return lock.runExclusive(async () => {
-        if (!gameTiles[gameId] || !gameTiles[gameId][playerId]) {
-            await reloadGameState(gameId);
+        try{
+            // Validate the player's turn using the stored procedure
+            await db.query('CALL validate_turn(?, ?)', [gameId, playerId]);
+
             if (!gameTiles[gameId] || !gameTiles[gameId][playerId]) {
-                throw new Error(`No tiles allocated for the player`);
+                await reloadGameState(gameId);
+                if (!gameTiles[gameId] || !gameTiles[gameId][playerId]) {
+                    throw new Error(`No tiles allocated for the player`);
+                }
             }
-        }
 
-        const playerTiles = gameTiles[gameId][playerId];
-        const tileIndex = playerTiles.findIndex((tile) => tile.id === tileId);
+            const playerTiles = gameTiles[gameId][playerId];
+            const tileIndex = playerTiles.findIndex((tile) => tile.id === tileId);
 
-        if (tileIndex === -1) {
-            throw new Error(`Tile ${tileId} is not available for player ${playerId}`);
-        }
+            if (tileIndex === -1) {
+                throw new Error(`Tile ${tileId} is not available for player ${playerId}`);
+            }
 
-        const tile = playerTiles[tileIndex];
+            const tile = playerTiles[tileIndex];
 
-        try {
             // Execute the stored procedure for tile placement
-            try {
-                const [results] = await db.query(
-                    'CALL place_tile(?, ?, ?, ?, ?, ?, ?)',
-                    [gameId, playerId, tileId, anchorX, anchorY, mirror ? 1 : 0, rotate]
-                );
-            } catch (err) {
-                const error = new Error('Failed to place tile');
-                throw error;
-            }
+            await db.query(
+                'CALL place_tile(?, ?, ?, ?, ?, ?, ?)',
+                [gameId, playerId, tileId, anchorX, anchorY, mirror ? 1 : 0, rotate]
+            );
+
+            // Calculate tile size (score increment)
+            const tileSize = tile.coordinates.length;
+
+            // Update score
+            await db.query('CALL update_score(?, ?, ?)', [gameId, playerId, tileSize]);
+
+            // Update the turn to the next player
+            await db.query('CALL update_turn(?)', [gameId]);
 
             // Remove the tile from memory after successful placement
             playerTiles.splice(tileIndex, 1);
@@ -386,6 +394,59 @@ async function validateTilePlacement(board, gameId, playerId, tileId, anchorX, a
     return { valid: true };
 }
 
+function generateTileTransformations(tile) {
+    const transformations = [];
+
+    // Apply all 4 rotations
+    for (const rotate of [0, 90, 180, 270]) {
+        let rotatedTile = rotateTile(tile, rotate);
+
+        // Add original orientation and horizontal mirror
+        transformations.push(normalizeCoordinates(rotatedTile)); // Original
+        transformations.push(normalizeCoordinates(mirrorTile({ coordinates: rotatedTile }, 1))); // Mirrored
+    }
+    return transformations;
+}
+
+async function checkNoRemainingMoves(gameId, board) {
+    const participants = await fetchParticipants(gameId); // Fetch all participants in the game
+    const playerColors = await fetchPlayerColors(gameId);
+
+    for (const { player_id: playerId } of participants) {
+        const playerTiles = gameTiles[gameId][playerId];
+
+        for (const tile of playerTiles) {
+            // Generate all transformations of the tile
+            const transformations = generateTileTransformations(tile);
+
+            for (const transformedTile of transformations) {
+                for (let x = 0; x < board.length; x++) {
+                    for (let y = 0; y < board[0].length; y++) {
+                        const validationResult = await validateTilePlacement(
+                            board,
+                            gameId,
+                            playerId,
+                            tile.id,
+                            x,
+                            y,
+                            0, // No mirroring needed (handled in transformations)
+                            0      // Rotation is handled in transformations
+                        );
+
+                        if (validationResult.valid) {
+                            return false; // Valid move found; game continues
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return true; // No valid moves for any player
+}
+
+
+
 module.exports = {
     rotateTile,
     mirrorTile,
@@ -399,5 +460,8 @@ module.exports = {
     validateTilePlacement,
     visualizeBoard,
     constructBoard,
+    generateTileTransformations,
+    checkNoRemainingMoves,
     tiles,
+    gameTiles
 };

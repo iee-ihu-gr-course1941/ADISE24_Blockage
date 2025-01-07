@@ -89,7 +89,7 @@ BEGIN
 		SELECT 2
         FROM participants p
         JOIN games g ON p.game_id = g.game_id
-        WHERE p.player_id = ? AND g.status IN ('initialized', 'started')
+        WHERE p.player_id = playerId AND g.status IN ('initialized', 'started')
 	) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Player is already participating in another active game';
@@ -240,3 +240,187 @@ BEGIN
     COMMIT;
     END ;;
     DELIMITER ;
+
+
+
+DROP PROCEDURE IF EXISTS place_tile;
+
+DELIMITER //
+
+CREATE PROCEDURE place_tile (
+    IN p_game_id INT,
+    IN p_player_id INT,
+    IN p_tile_id INT,
+    IN p_anchor_x INT,
+    IN p_anchor_y INT,
+    IN p_mirror TINYINT(1),
+    IN p_rotate ENUM('0','90','180','270')
+        )
+BEGIN
+    -- Lock the relevant row for the game and player to prevent conflicts
+SELECT 1 FROM participants
+WHERE game_id = p_game_id AND player_id = p_player_id
+    FOR UPDATE;
+
+-- Check if the tile has already been placed by this player in this game
+IF EXISTS (
+        SELECT 1
+        FROM placed_tiles
+        WHERE game_id = p_game_id AND player_id = p_player_id AND tile_id = p_tile_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Tile already placed';
+END IF;
+
+    -- Insert the placed tile
+INSERT INTO placed_tiles (tile_id, game_id, player_id, anchor_x, anchor_y, mirror, rotate)
+VALUES (p_tile_id, p_game_id, p_player_id, p_anchor_x, p_anchor_y, p_mirror, p_rotate);
+
+-- Optional: Update player score or other game logic here
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE PROCEDURE update_score (
+    IN p_game_id INT,
+    IN p_player_id INT,
+    IN p_tile_size INT
+)
+BEGIN
+    -- Update the score of the participant
+UPDATE participants
+SET score = score + p_tile_size
+WHERE game_id = p_game_id AND player_id = p_player_id;
+END //
+
+DELIMITER ;
+
+DELIMITER //
+
+CREATE PROCEDURE validate_turn (
+    IN p_game_id INT,
+    IN p_player_id INT
+)
+BEGIN
+    -- Check if it's the player's turn
+    IF NOT EXISTS (
+        SELECT 1
+        FROM games
+        WHERE game_id = p_game_id AND player_turn = p_player_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = "It is not the player\'s turn";
+    END IF;
+END //
+
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS update_turn;
+
+DELIMITER //
+
+CREATE PROCEDURE update_turn (
+    IN p_game_id INT
+)
+BEGIN
+    DECLARE next_player INT;
+    DECLARE current_player_color ENUM('blue', 'red', 'green', 'magenta');
+    DECLARE max_players ENUM('2', '4');
+
+    -- Get the current player color and the max number of players
+    SELECT color
+    INTO current_player_color
+    FROM participants
+    WHERE player_id = (SELECT player_turn FROM games WHERE game_id = p_game_id)
+      AND game_id = p_game_id;
+
+    SELECT max_number_of_players INTO max_players FROM games WHERE game_id = p_game_id;
+
+    -- Determine the next player based on the number of participants
+    CASE max_players
+        WHEN '2' THEN
+            CASE current_player_color
+                WHEN 'blue' THEN
+                    SELECT player_id INTO next_player FROM participants
+                    WHERE game_id = p_game_id AND color = 'red' LIMIT 1;
+                WHEN 'red' THEN
+                    SELECT player_id INTO next_player FROM participants
+                    WHERE game_id = p_game_id AND color = 'blue' LIMIT 1;
+                ELSE
+                    SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'Invalid current_player_color for 2-player game';
+            END CASE;
+        WHEN '4' THEN
+            CASE current_player_color
+                WHEN 'blue' THEN
+                    SELECT player_id INTO next_player FROM participants
+                    WHERE game_id = p_game_id AND color = 'red' LIMIT 1;
+                WHEN 'red' THEN
+                    SELECT player_id INTO next_player FROM participants
+                    WHERE game_id = p_game_id AND color = 'green' LIMIT 1;
+                WHEN 'green' THEN
+                    SELECT player_id INTO next_player FROM participants
+                    WHERE game_id = p_game_id AND color = 'magenta' LIMIT 1;
+                WHEN 'magenta' THEN
+                    SELECT player_id INTO next_player FROM participants
+                    WHERE game_id = p_game_id AND color = 'blue' LIMIT 1;
+                ELSE
+                    SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'Invalid current_player_color for 4-player game';
+            END CASE;
+        ELSE
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Invalid max_number_of_players';
+    END CASE;
+
+    -- Update the games table with the next player
+    UPDATE games SET player_turn = next_player WHERE game_id = p_game_id;
+END //
+
+DELIMITER ;
+
+
+DELIMITER //
+
+CREATE TRIGGER start_game_when_full
+AFTER INSERT ON participants
+FOR EACH ROW
+BEGIN
+    DECLARE participant_count INT;
+    DECLARE max_players ENUM('2','4');
+    DECLARE blue_player INT;
+
+    -- Get the current participant count for the game
+    SELECT COUNT(*) INTO participant_count
+    FROM participants
+    WHERE game_id = NEW.game_id;
+
+    -- Get the max number of players for the game
+    SELECT max_number_of_players INTO max_players
+    FROM games
+    WHERE game_id = NEW.game_id;
+
+    -- Check if the participant count matches the max number of players
+    IF participant_count = CAST(max_players AS UNSIGNED) THEN
+        -- Update game status to 'started'
+        UPDATE games
+        SET status = 'started'
+        WHERE game_id = NEW.game_id;
+
+        -- Set the player_turn to the player with the blue color
+        SELECT player_id INTO blue_player
+        FROM participants
+        WHERE game_id = NEW.game_id AND color = 'blue'
+        LIMIT 1;
+
+        UPDATE games
+        SET player_turn = blue_player
+        WHERE game_id = NEW.game_id;
+    END IF;
+END //
+
+DELIMITER ;

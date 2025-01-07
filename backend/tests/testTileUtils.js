@@ -11,6 +11,8 @@ const {
     validateTilePlacement,
     visualizeBoard,
     constructBoard,
+    generateTileTransformations,
+    checkNoRemainingMoves,
     tiles,
 } = require('../utils/tileUtils');
 
@@ -59,30 +61,36 @@ function testTileById(tileId) {
 
 async function main() {
     try {
-        allocateTiles(1, [{ player_id: 1 }, { player_id: 2 }]);
+        // allocateTiles(1, [{ player_id: 1 }, { player_id: 2 }]);
+
         let board = await constructBoard(1, 20, 20); // Wait for the promise to resolve
 
         // Visualize the board
         visualizeBoard(board);
 
-        await reloadGameState(1)
-
-        // Validate tile placement
-        const validationResult = await validateTilePlacement(board,1, 1, 1, 19, 19, 1, "0");
-
-        if (validationResult.valid) {
-            console.log('Placement is valid!');
-            // Update the board state
-            await placeTile(1, 1, 1, 19, 19, 1, '0');
-        }
-        else {
-            console.log('Invalid placement:', validationResult.reason);
-        }
-
-        board = await constructBoard(1, 20, 20); // Wait for the promise to resolve
-
-        // Visualize the board
-        visualizeBoard(board);
+        // await reloadGameState(1)
+        //
+        // // Validate tile placement
+        // const validationResult = await validateTilePlacement(board,1, 2, 3, 16, 15, 0, "90");
+        //
+        // if (validationResult.valid) {
+        //     console.log('Placement is valid!');
+        //     // Update the board state
+        //     await placeTile(1, 2, 3, 16, 15, 0, '90');
+        //     if (await checkNoRemainingMoves(1, board)){
+        //         console.log('No remaining moves!');
+        //     } else {
+        //         console.log('There are remaining moves.');
+        //     }
+        // }
+        // else {
+        //     console.log('Invalid placement:', validationResult.reason);
+        // }
+        //
+        // board = await constructBoard(1, 20, 20); // Wait for the promise to resolve
+        //
+        // // Visualize the board
+        // visualizeBoard(board);
     } catch (error) {
         console.error('Error visualizing the board:', error.message);
     }

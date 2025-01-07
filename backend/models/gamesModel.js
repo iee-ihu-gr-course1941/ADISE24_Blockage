@@ -168,6 +168,22 @@ const fetchPlayerColors = async (gameId) =>{
     }
 }
 
+const fetchPlayerScores = async (gameId) =>{
+    try {
+        const [results] = await db.query(
+            'SELECT player_id, score FROM participants WHERE game_id = ?',
+            [gameId]
+        );
+        const playerScores = {};
+        results.forEach(({ player_id, score }) => {
+            playerScores[player_id] = score;
+        });
+        return playerScores;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
 module.exports = {
     createNewGame,
     fetchGames,
@@ -179,5 +195,6 @@ module.exports = {
     checkIfParticipantInTheGame,
     fetchPlacedTiles,
     fetchParticipants,
-    fetchPlayerColors
+    fetchPlayerColors,
+    fetchPlayerScores
 };
