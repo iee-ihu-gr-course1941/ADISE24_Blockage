@@ -327,6 +327,13 @@ async function validateTilePlacement(board, gameId, playerId, tileId, anchorX, a
 
     let cornerTouch = false;
 
+    if (isFirstTile) {
+        // Check if none of the coordinates of the transformedTile equals the coordinates of playerCorner
+        if (!transformedTile.some(([x, y]) => x === playerCorner[0] && y === playerCorner[1])) {
+            return { valid: false, reason: 'Tile must touch the player’s corner' };
+        }
+    }
+
     for (const [x, y] of transformedTile) {
         // Boundary Check
         if (x < 0 || x >= boardHeight || y < 0 || y >= boardWidth) {
@@ -338,50 +345,41 @@ async function validateTilePlacement(board, gameId, playerId, tileId, anchorX, a
             return { valid: false, reason: 'Tile overlap' };
         }
 
-        // Special Case: First Placement
-        if (isFirstPlacement) {
-            if (anchorX !== playerCorner[0] || anchorY !== playerCorner[1]) {
-                return { valid: false, reason: 'First tile must be placed in the player’s corner' };
+        // Check Corner Touch
+        const cornerNeighbors = [
+            [x - 1, y - 1],
+            [x - 1, y + 1],
+            [x + 1, y - 1],
+            [x + 1, y + 1],
+        ];
+        for (const [cx, cy] of cornerNeighbors) {
+            if (
+                cx >= 0 &&
+                cy >= 0 &&
+                cx < boardHeight &&
+                cy < boardWidth &&
+                board[cx][cy].playerId === playerId
+            ) {
+                cornerTouch = true;
             }
-        } else {
-            // For subsequent placements, check general rules (Corner Touch and No Edge Touch)
+        }
 
-            // Check Corner Touch
-            const cornerNeighbors = [
-                [x - 1, y - 1],
-                [x - 1, y + 1],
-                [x + 1, y - 1],
-                [x + 1, y + 1],
-            ];
-            for (const [cx, cy] of cornerNeighbors) {
-                if (
-                    cx >= 0 &&
-                    cy >= 0 &&
-                    cx < boardHeight &&
-                    cy < boardWidth &&
-                    board[cx][cy].playerId === playerId
-                ) {
-                    cornerTouch = true;
-                }
-            }
-
-            // Check Edge Touch
-            const edgeNeighbors = [
-                [x - 1, y],
-                [x + 1, y],
-                [x, y - 1],
-                [x, y + 1],
-            ];
-            for (const [ex, ey] of edgeNeighbors) {
-                if (
-                    ex >= 0 &&
-                    ey >= 0 &&
-                    ex < boardHeight &&
-                    ey < boardWidth &&
-                    board[ex][ey].playerId === playerId
-                ) {
-                    return { valid: false, reason: 'Edge touch violation' };
-                }
+        // Check Edge Touch
+        const edgeNeighbors = [
+            [x - 1, y],
+            [x + 1, y],
+            [x, y - 1],
+            [x, y + 1],
+        ];
+        for (const [ex, ey] of edgeNeighbors) {
+            if (
+                ex >= 0 &&
+                ey >= 0 &&
+                ex < boardHeight &&
+                ey < boardWidth &&
+                board[ex][ey].playerId === playerId
+            ) {
+                return { valid: false, reason: 'Edge touch violation' };
             }
         }
     }
