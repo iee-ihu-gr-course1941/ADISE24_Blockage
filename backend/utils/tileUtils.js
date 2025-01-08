@@ -159,7 +159,7 @@ async function placeTile(gameId, playerId, tileId, anchorX, anchorY, mirror, rot
             console.log(`Tile ${tileId} placed by player ${playerId} in game ${gameId}`);
 
             // Check for deadlock
-            if (await checkNoRemainingMoves(gameId, await constructBoard(gameId))) {
+            if (await checkNoRemainingMoves(gameId, await constructBoard(gameId , 20, 20))) {
                 await updateGameStatus(gameId, 'ended');
                 return;
             }

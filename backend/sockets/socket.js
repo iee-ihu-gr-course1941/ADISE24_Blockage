@@ -101,8 +101,8 @@ module.exports = (io) => {
                             // Allocate tiles to participants
                             allocateTiles(gameID, participants);
 
-                            // Construct the empty board
-                            const board = await constructBoard(gameID);
+                    // Construct the empty board
+                    const board = await constructBoard(gameID, 20, 20);
 
                             // Notify all participants that the game has started
                             io.to(gameID).emit('board-initialized', {
@@ -266,7 +266,7 @@ module.exports = (io) => {
             try {
 
                 // Construct the board state
-                const board = await constructBoard(gameID, 5, 5);
+                const board = await constructBoard(gameID, 20, 20);
 
                 // Validate tile placement
                 const validationResult = await validateTilePlacement(
@@ -294,7 +294,7 @@ module.exports = (io) => {
                 const updatedGame = await retrieveGameById(gameID);
 
                 // Broadcast the unified event to all players in the game room
-                const updatedBoard = await constructBoard(gameID);
+                const updatedBoard = await constructBoard(gameID, 20, 20);
 
                 if(updatedGame.status === 'ended') {
 
@@ -306,6 +306,7 @@ module.exports = (io) => {
                     io.to(gameID).emit('game-ended', {
                         message: `Game ${gameID} has ended.`,
                         board: updatedBoard,
+                        tiles: gameTiles[gameID],
                         scores: updatedScores,
                         winner: winners
                     });
