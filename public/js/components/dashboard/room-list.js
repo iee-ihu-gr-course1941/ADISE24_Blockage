@@ -1,5 +1,5 @@
 import dashboardAPI from '../../api/dashboardRestAPI.js';
-import socketAPI from '../../api/dashboardWebsocketsAPI.js'
+import socketDashboardAPI from '../../api/dashboardWebsocketsAPI.js'
 
 // Function to populate the room list on the dashboard
 const populateRoomList = async (newRooms, status) => {
@@ -65,7 +65,7 @@ const createRoomCard = async (room, current_participants) => {
     joinButton.addEventListener("click", async () => {
         console.log(`Joining ${room.name}`);
         // Initialize socket and create or join the provided by id room
-        await socketAPI.initializeSocket(room.game_id);
+        await socketDashboardAPI.initializeSocket(room.game_id);
     });
     roomCard.appendChild(joinButton);
     return roomCard;

@@ -44,6 +44,12 @@ const socketioToken = async (socket, next) => {
 
         socket.user = decoded; // Attach decoded user to request
         socket.gameID = gameId;
+
+        // Check if user is already connected to the server via socket (same or different)
+        // if (isUserAlreadyConnected(decoded.id)) {
+        //     return next(new Error('User is already connected'));
+        // }
+
         userSocketMap.set(decoded.id, socket.id)    // Store user's socket id in a map
         next(); // Proceed to the next middleware or route handler
     } catch (error) {
@@ -59,6 +65,12 @@ const getUserSocket = (userId) => {
     return userSocketMap.get(userId);
 }
 
+// Check if user is already connected
+const isUserAlreadyConnected = (userId) => {
+    console.log([...userSocketMap.entries()]); // Show the userSocketMap of all users
+    return userSocketMap.has(userId);
+}
+
 // Cleanup socketioUserMap when a user disconnects
 const removeUserSocketMap = (socket) => {
     if (socket.user && userSocketMap.has(socket.user.id)) {
@@ -66,4 +78,4 @@ const removeUserSocketMap = (socket) => {
     }
 }
 
-module.exports = { socketioToken, getUserSocket, removeUserSocketMap }
+module.exports = { socketioToken, getUserSocket, removeUserSocketMap, isUserAlreadyConnected }

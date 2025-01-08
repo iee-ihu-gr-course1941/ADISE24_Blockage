@@ -1,6 +1,6 @@
 import authApi from '../../api/authApi.js';
 import dashboardAPI from '../../api/dashboardRestAPI.js';
-import socketAPI from '../../api/dashboardWebsocketsAPI.js'
+import socketDashboardAPI from '../../api/dashboardWebsocketsAPI.js'
 import { populateRoomList } from './room-list.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetchDashboardContent(dropdownValue)
 
             // SocketIO IMPLEMENTATION
-            await socketAPI.initializeSocket(gameId);
+            await socketDashboardAPI.initializeSocket(gameId);
 
         } catch (error) {
             alert(error.message.split('message:')[1]);

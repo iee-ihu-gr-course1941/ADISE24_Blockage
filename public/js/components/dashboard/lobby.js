@@ -1,5 +1,5 @@
 import dashboardAPI from '../../api/dashboardRestAPI.js';
-import socketAPI from '../../api/dashboardWebsocketsAPI.js'
+import socketDashboardAPI from '../../api/dashboardWebsocketsAPI.js'
 
 // Show lobby card by room/game id
 const showLobbyCard = async (roomId) => {
@@ -79,7 +79,7 @@ const showLobbyCard = async (roomId) => {
     leaveButton.textContent = "LEAVE";
     // Event listener for leave button
     leaveButton.addEventListener("click", async () => {
-        await socketAPI.emitEvent('player-left', async (data) => {
+        await socketDashboardAPI.emitEvent('player-left', async (data) => {
             console.log('Player left:', data);
         });
         location.reload();
@@ -102,7 +102,29 @@ const hideLobbyCard = () => {
     dashboardOverlay.classList.add("hidden");
 }
 
+// Disable leave button and change waiting message for 5 secs
+// const disableLobbyCard = () => {
+//     const leaveButton = document.getElementsByClassName("leave-button")[0];
+//     const waitingMessage = document.getElementsByClassName("waiting-message")[0];
+    
+//     if (!leaveButton || !waitingMessage) {
+//         console.error("Leave button or waiting message not found");
+//         return;
+//     }
+
+//     leaveButton.disabled = true;
+//     let i = 0;
+//     const intervalId = setInterval(function () {
+//         waitingMessage.innerHTML = `Game starts in: <b style="color: red;">${5 - i}</b>`;
+//         i++;
+//         if (i > 5) {
+//             clearInterval(intervalId);
+//         }
+//     }, 1000);
+// }
+
 export {
     showLobbyCard,
-    hideLobbyCard
+    hideLobbyCard,
+    disableLobbyCard
 }

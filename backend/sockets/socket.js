@@ -32,16 +32,21 @@ const {
     gameTiles
 } = require('../utils/tileUtils');
 
+const roomRecreated = new Map(); // Map to track if a room has been recreated
+
 module.exports = (io) => {
     io.on('connection', async (socket) => {
         const { user, gameID } = socket;
         console.log(`User ${user.id}  with socketID: '${socket.id}' connected`);
         console.info(`Number of current active sockets: ${io.sockets.sockets.size}`);
+
         try {
             // Check if room already exists
+
             // console.log(io.sockets.adapter.rooms);
             const roomExists = io.sockets.adapter.rooms.has(gameID);
             console.log(`Room ${gameID} exists: ${roomExists}`);
+
             if (roomExists) {
                 // player-join 
 
@@ -49,27 +54,75 @@ module.exports = (io) => {
                 // Check if player is already in the game
                 if (await checkIfParticipantInTheGame(user.id, gameID)) {
                     // Check if player is already in the game with another socket
-                    if (getUserSocket(user.id)) {
-                        // If so disconnect the new socket and return
-                        console.log('THERE ARE 2 SOCKETS FOR THE SAME USER');
-                        socket.emit('error', { message: `Player '${user.playerName}' already in the game by other socket. You are disconnected by this one!` });
-                        removeUserSocketMap(socket);
-                        socket.disconnect();
-                        return;
-                    }
+
+
+                    // console.log(getUserSocket(user.id));
+                    // if (getUserSocket(user.id)) {
+                    //     // If so disconnect the new socket and return
+                    //     console.log('THERE ARE 2 SOCKETS FOR THE SAME USER');
+                    //     socket.emit('error', { message: `Player '${user.playerName}' already in the game by other socket. You are disconnected by this one!` });
+                    //     removeUserSocketMap(socket);
+                    //     socket.disconnect();
+                    //     return;
+                    // }
+
+
                     // player is already in the game, rejoin
                     socket.join(gameID);
                     socket.currentRoom = gameID;
                     console.log(`Rejoined in game/room '${gameID}' socket: '${socket.id}'`);
+
                     io.to(gameID).emit('player-joined', { message: `Player '${user.playerName}' rejoined game '${gameID}' with socket '${socket.id}'` });
                     console.log(io.sockets.adapter.rooms);
+
+                    // Check if game has started
+                    const game = await retrieveGameById(gameID);
+                    console.log(game);
+                    if (game.status === 'started') {
+
+                        const placedTiles = await retrievePlacedTiles(gameID);
+                        // console.log(placedTiles);
+                        if (placedTiles.length !== 0) {
+                            // TODO Reload the game state - There is already an implemenration for this in the utils
+                            return;
+                        }
+
+                        // gia na exei 3ekinisei to game (diladi status='started') simainei oti to arxiko room exei gemisei sto max_number_of_players
+                        const participants = await retrieveParticipantsIds(gameID);
+
+                        const roomSockets = await io.in(gameID).fetchSockets();
+                        // console.log(roomSockets);
+                        const roomSocketsLength = roomSockets.length;
+                        // console.log(roomSockets.length);
+
+                        // Check if the room is full - That means all players have rejoined the room
+                        if (roomSocketsLength === participants.length) {
+
+                            // Allocate tiles to participants
+                            allocateTiles(gameID, participants);
+
+                            // Construct the empty board
+                            const board = await constructBoard(gameID);
+
+                            // Notify all participants that the game has started
+                            io.to(gameID).emit('board-initialized', {
+                                message: `Board for game '${gameID}' has initialized.`,
+                                board: board,
+                                tiles: gameTiles[gameID], // In-memory tiles for each player
+                                turn: game.player_turn,
+                            });
+
+                            console.log(`Board game '${gameID}' initialized, participants notified and tiles allocated.`);
+                        }
+                        // return;
+                    }
                     return;
                 }
                 // player is not already in the game, So add him/her, join
                 await addParticipant(gameID, user.id);
                 socket.join(gameID)
                 socket.currentRoom = gameID;
-                console.log(`Joined in game/room '${gameID}' socket: '${socket.id}'`);
+                console.log(`Joined in room '${gameID}' socket: '${socket.id}'`);
                 io.to(gameID).emit('player-joined', { message: `Player '${user.playerName}' with socket ID '${socket.id}' joined game '${gameID}'` });
 
                 // !!!There is a trigger in the db that checks if max number of players is reached and changes the status of the game to 'started'
@@ -78,38 +131,65 @@ module.exports = (io) => {
                 const game = await retrieveGameById(gameID);
 
                 if (game.status === 'started') {
-                    // Game has started (max player limit of corresponding game reached). Allocate tiles and notify participants
 
-                    const participants = await retrieveParticipantsIds(gameID);
+                    const roomSockets = await io.in(gameID).fetchSockets();
+                    // console.log(roomSockets);
+                    // console.log('Sockets before emit "game-started" event from server:');
 
-                    // Allocate tiles to participants
-                    allocateTiles(gameID, participants);
+                    const participantIds = await retrieveParticipantsIds(gameID);
+                    const participantIdsArray = participantIds.map(({ player_id }) => player_id);
+                    // console.log(participantIds);
+                    // console.log('Participant array: ', participantIdsArray);
 
-                    // Construct the empty board
-                    const board = await constructBoard(gameID);
+                    let i = 0;
+                    for (let playerSocket of roomSockets) {
+                        console.log(`${i}: ${playerSocket.id}`);
+                        console.log(playerSocket);
 
-                    // Notify all participants that the game has started
-                    io.to(gameID).emit('game-started', {
-                        message: `Game '${gameID}' has started.`,
-                        board: board,
-                        tiles: gameTiles[gameID], // In-memory tiles for each player
-                        turn: game.player_turn,
-                    });
+                        console.log(`socket mapping before: ${getUserSocket(participantIdsArray[i])} `);
+                        removeUserSocketMap(playerSocket);
+                        console.log(`socket mapping after: ${getUserSocket(participantIdsArray[i])} `);
+                        i++;
+                    }
+                    io.to(gameID).emit('game-started', { message: `Game '${gameID}' has started.` });
 
-                    console.log(`Game '${gameID}' started, participants notified and tiles allocated.`);
+                    // return;
                 }
-
+                // return;
 
             } else {
-                // create-game
+                // create-game/room
+
                 const game = await retrieveGameById(gameID);
-                if (game.status !== 'initialized') {
-                    throw new Error(`Game with ID ${gameID} is not in status 'initialized', cannot create room for it`);
+                if (game.status === 'initialized') {
+                    // create room for 1st time
+                    socket.join(gameID)
+                    socket.currentRoom = gameID;
+                    console.log(`Created room '${gameID}' by socket: '${socket.id}'`);
+                    socket.emit('game-created', { message: `Player '${user.playerName}' with socket ID '${socket.id}' created room '${gameID}'` });
+                } else if (game.status === 'started') {
+                    // Recreate the room ensuring only the creator of the game will recreate it
+                    // When the game is started (in /game page)
+
+                    if (game.created_by === user.id) {
+                        // create room for 2nd time by the creator of the game
+
+                        roomRecreated.set(gameID, true); // Set to true in order to allow the other sockets to join the room
+                        socket.join(gameID)
+                        socket.currentRoom = gameID;
+                        console.log(`Recreated room '${gameID}' by socket: '${socket.id}'`);
+                        socket.emit('game-created', { message: `Player '${user.playerName}' with socket ID '${socket.id}' created AGAIN the room '${gameID}'` });
+                        // return;
+                    } else if (!roomRecreated.get(gameID)) {
+                        // The room has not already been recreated by the original creator
+                        socket.emit('error', { message: 'Room has not been recreated by the original creator yet.', reason: 'room not recreated yet' });
+                        // socket.emit('connect_error', { message: 'Room has not been recreated by the original creator yet.' });
+                        socket.disconnect();
+                        // return;
+                    }
+                } else {
+                    throw new Error(`Game with ID ${gameID} is not in status 'initialized' nor 'started', cannot create room for it`);
                 }
-                socket.join(gameID)
-                socket.currentRoom = gameID;
-                console.log(`Created game/room '${gameID}' by socket: '${socket.id}'`);
-                socket.emit('game-created', { message: `Player '${user.playerName}' with socket ID '${socket.id}' created game '${gameID}'` });
             }
         } catch (error) {
             // Error handling and emitting error message to the socket
@@ -117,7 +197,7 @@ module.exports = (io) => {
             socket.emit('error', { error: error.message, message: `Error creating game or adding participant for player '${user.playerName}'` });
             removeUserSocketMap(socket);
             socket.disconnect();
-        }
+        };
         socket.on('player-left', async () => {
             // Check if game exists & has status 'initialized' - Player can leave ONLY from a game with status 'initialized'
             try {
@@ -234,7 +314,7 @@ module.exports = (io) => {
         // Check if provided by client event name is valid
         // Return error message to socket
         // For Development purposes!
-        const validEvents = ['place-tile', 'player-left', 'game-ended', 'disconnect'];
+        const validEvents = ['place-tile', 'player-left', 'game-ended', 'game-started', 'disconnect'];
         socket.onAny((event, ...args) => {
             if ((validEvents.includes(event)))
                 return;
@@ -246,7 +326,7 @@ module.exports = (io) => {
 
 
 // Check if socket is already in a room
-const checkIfAlreadyInActiveRoom = (socket) => {
+const checkIfAlreadyInActiveRoom = async (socket) => {
     return socket.currentRoom ? true : false;
 }
 
