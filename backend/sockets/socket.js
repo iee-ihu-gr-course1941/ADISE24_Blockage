@@ -241,18 +241,18 @@ module.exports = (io) => {
                 socket.emit('error', { error: error.message, message: 'Error leaving game' });
             }
         });
-        socket.on('game-ended', async ({ status }) => {
-            try {
-                if (!status) {
-                    return socket.emit('error', { message: 'status data field is required' });
-                }
-                await updateGameStatus(gameID, status);
-                io.of('/').in(gameID).disconnectSockets();
-            } catch (error) {
-                console.error(`Error ending game for socket: ${socket.id}`, error);
-                socket.emit('error', { error: error.message, message: 'Error ending game' });
-            }
-        });
+        // socket.on('game-ended', async ({ status }) => {
+        //     try {
+        //         if (!status) {
+        //             return socket.emit('error', { message: 'status data field is required' });
+        //         }
+        //         await updateGameStatus(gameID, status);
+        //         io.of('/').in(gameID).disconnectSockets();
+        //     } catch (error) {
+        //         console.error(`Error ending game for socket: ${socket.id}`, error);
+        //         socket.emit('error', { error: error.message, message: 'Error ending game' });
+        //     }
+        // });
         socket.on('disconnect', () => {
             // Check if player belongs in the room
             if (checkIfAlreadyInActiveRoom(socket)) {
@@ -266,7 +266,7 @@ module.exports = (io) => {
             try {
 
                 // Construct the board state
-                const board = await constructBoard(gameID);
+                const board = await constructBoard(gameID, 5, 5);
 
                 // Validate tile placement
                 const validationResult = await validateTilePlacement(
@@ -295,6 +295,36 @@ module.exports = (io) => {
 
                 // Broadcast the unified event to all players in the game room
                 const updatedBoard = await constructBoard(gameID);
+
+                if(updatedGame.status === 'ended') {
+
+                    // Find the highest score
+                    const highestScore = Math.max(...Object.values(updatedScores));
+                    // Find the winner(s)
+                    const winners = Object.keys(updatedScores).filter(playerId => updatedScores[playerId] === highestScore);
+
+                    io.to(gameID).emit('game-ended', {
+                        message: `Game ${gameID} has ended.`,
+                        board: updatedBoard,
+                        scores: updatedScores,
+                        winner: winners
+                    });
+
+                    // Disconnect all sockets in the game room after 10 seconds
+                    setTimeout(() => {
+                        const sockets = io.sockets.adapter.rooms.get(gameID);
+                        if (sockets) {
+                            for (const socketId of sockets) {
+                                const socket = io.sockets.sockets.get(socketId);
+                                if (socket) {
+                                    socket.disconnect(true);
+                                }
+                            }
+                        }
+                        console.log(`All participants of game ${gameID} have been disconnected.`);
+                    }, 10000);
+                    return;
+                }
 
                 io.to(gameID).emit('game-update', {
                     board: updatedBoard,

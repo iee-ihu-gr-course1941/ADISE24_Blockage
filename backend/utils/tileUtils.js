@@ -1,4 +1,4 @@
-const { retrievePlacedTiles, retrieveParticipantsIds, retrievePlayerColors } = require('../models/gamesModel');
+const { retrievePlacedTiles, retrieveParticipantsIds, retrievePlayerColors, updateGameStatus} = require('../models/gamesModel');
 const Mutex = require('async-mutex').Mutex;
 const db = require('../config/db');
 const gameLocks = {}; // Mutex for each game and player
@@ -154,12 +154,18 @@ async function placeTile(gameId, playerId, tileId, anchorX, anchorY, mirror, rot
             // Update score
             await db.query('CALL update_score(?, ?, ?)', [gameId, playerId, tileSize]);
 
-            // Update the turn to the next player
-            await db.query('CALL update_turn(?)', [gameId]);
-
             // Remove the tile from memory after successful placement
             playerTiles.splice(tileIndex, 1);
             console.log(`Tile ${tileId} placed by player ${playerId} in game ${gameId}`);
+
+            // Check for deadlock
+            if (await checkNoRemainingMoves(gameId, await constructBoard(gameId))) {
+                await updateGameStatus(gameId, 'ended');
+                return;
+            }
+
+            // Update the turn to the next player
+            await db.query('CALL update_turn(?)', [gameId]);
         } catch (error) {
             console.error('Tile placement failed:', error.message);
             throw error;
