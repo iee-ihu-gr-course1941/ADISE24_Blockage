@@ -35,6 +35,18 @@ const initializeSocket = async (gameId) => {
             // Update the UI to show the refreshed lobby
             await showLobbyCard(gameId);
         });
+        listenEvent('game-started', (data) => {
+            console.log(data.message);
+            // document.addEventListener('DOMContentLoaded', () => {
+                // Call disableLobbyCard when elements are guaranteed to exist
+                // disableLobbyCard();
+            // });
+
+            // save gameID in sessionStorage & Redirect to the game page
+            sessionStorage.setItem('gameId', gameId);
+            window.location.href = '/game';
+            // window.location.href = `/game?gameId=${gameId}`;
+        });
         listenEvent('game-deleted', async (data) => {
             console.log(data);
             // Update the UI to hide the deleted game and refresh the page

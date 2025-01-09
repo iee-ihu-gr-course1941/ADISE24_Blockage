@@ -14,6 +14,9 @@ const showLobbyCard = async (roomId) => {
         return;
     }
     const currentParticipants = await dashboardAPI.fetchParticipantsByGameId(room.game_id); // get current participants of room
+    // console.log(currentParticipants);
+    // const arrayKT = [...currentParticipants];
+    // console.log(arrayKT);
 
     //title
     const title = document.createElement("h2");
@@ -126,5 +129,5 @@ const hideLobbyCard = () => {
 export {
     showLobbyCard,
     hideLobbyCard,
-    disableLobbyCard
+    // disableLobbyCard
 }
