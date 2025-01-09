@@ -123,7 +123,7 @@ const retrieveGameById = async (gameId) => {
 const retrieveParticipantsByGameId = async (gameId) => {
     try {
         const query = `
-            SELECT pl.player_name, p.color
+            SELECT pl.player_name, p.color, p.score
             FROM participants p
             INNER JOIN players pl ON p.player_id = pl.player_id
             WHERE p.game_id = ?

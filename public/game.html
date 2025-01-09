@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game</title>
+    <link rel="stylesheet" type="text/css" href="./assets/css/game.css">
+    <link rel="stylesheet" type="text/css" href="./assets/css/global.css">
+    <script type="module" src="./js/components/game.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Blockage</h1>
+        <div class="user-info">
+            <p>Player: </p>
+            <span id="player-name">UNKNOWN</span>
+        </div>
+        <button id="logout-button">Logout</button>
+    </header>
+
+    <div class="game-info">
+        <div id="current-turn" class="info-box">
+            UNKNOWN'S turn!
+        </div>
+        <div id="score-container">
+            <div class="score-box">
+                <span>name: </span>
+                <p>score: </p>
+            </div>
+            <!-- DYNAMIC score-boxes -->
+        </div>
+    </div>
+    <main>
+
+        <div class="game-container">
+            <!-- Game Board -->
+                <div id="board" class="board">
+
+                </div>
+            <!-- Right Panel -->
+            <div id="right-panel">
+                <!-- Tiles will be dynamically added here  -->
+                <!-- <div class="tile-container"> -->
+                <!-- <div class="tile-box">
+                        <div class="grid-cell-${color}"> </div>
+                        ...
+                        <div class="grid-cell-${color}"> </div>
+                    </div>
+                    <div id="tools">
+                            <img class="rotate-button">🔄</button>
+                            <img class="mirror-button">⇆</button>
+                    </div> -->
+                <!-- <div class="tile-box">
+                        <div class="grid-cell-${color}"> </div>
+                        ...
+                        <div class="grid-cell-${color}"> </div>
+                    </div>
+                </div> -->
+
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

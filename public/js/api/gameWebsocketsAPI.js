@@ -1,6 +1,7 @@
 // import { io } from "socket.io-client";
 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
 import { BASE_URL_API } from '../../config.js';
+import { renderAllTiles } from '../components/game.js';
 
 let socket = null;
 // let gameId = sessionStorage.getItem('gameId');
@@ -45,6 +46,8 @@ const initializeSocket = async (gameId) => {
         });
         listenEvent('board-initialized', async (data) => {
             console.log('Board Initialized!!!:', data);
+
+            await renderAllTiles(gameId, data.tiles);
         });
         listenEvent('game-update', async (data) => {
 
