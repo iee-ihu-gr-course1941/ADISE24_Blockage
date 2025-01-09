@@ -183,9 +183,7 @@ module.exports = (io) => {
                     } else if (!roomRecreated.get(gameID)) {
                         // The room has not already been recreated by the original creator
                         socket.emit('error', { message: 'Room has not been recreated by the original creator yet.', reason: 'room not recreated yet' });
-                        // socket.emit('connect_error', { message: 'Room has not been recreated by the original creator yet.' });
-                        socket.disconnect();
-                        // return;
+                        // socket.disconnect(true);
                     }
                 } else {
                     throw new Error(`Game with ID ${gameID} is not in status 'initialized' nor 'started', cannot create room for it`);

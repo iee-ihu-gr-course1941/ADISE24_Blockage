@@ -102,6 +102,14 @@ function renderTile(tile, container, color) {
         }
     }
 
+    tileBox.addEventListener("click", () => {
+        // TODO - Add when it's clicked to display the valid moves on the board
+        //        According to its state (via images rotate & flip) to display the...
+        //        ...tile properly on the tool-box element (before the two images)
+
+        console.log("Tile clicked");
+    });
+
     // Append tile to container
     container.appendChild(tileBox);
 }
@@ -109,6 +117,7 @@ function renderTile(tile, container, color) {
 // Main function to render all tiles
 const renderAllTiles = async (gameId, tiles) => {
     const rightPanel = document.getElementById("right-panel");
+    rightPanel.innerHTML = "";
 
     const tilesArray = Array.isArray(tiles) ? tiles : Object.values(tiles);
     if (!Array.isArray(tilesArray)) {
@@ -135,8 +144,8 @@ const renderAllTiles = async (gameId, tiles) => {
 
         // tiles = tiles.map(({ coordinates, ...rest }) => ({ ...rest, coordinates: [...coordinates] }));
 
-    // console.log(`tilesArray${[i]}`);
-    // console.log(tilesArray[i]);
+        // console.log(`tilesArray${[i]}`);
+        // console.log(tilesArray[i]);
         for (let tile of tilesArray[i]) {
             renderTile(tile, tileContainer, participant.color);
         }
@@ -146,18 +155,31 @@ const renderAllTiles = async (gameId, tiles) => {
 
         if (participant.player_name === myName) {
             const toolBox = document.createElement("div");
-            const rotateButton = document.createElement("img");
-            const flipButton = document.createElement("img");
+            const rotateImg = document.createElement("img");
+            const flipImage = document.createElement("img");
 
             toolBox.className = "tool-box";
-            rotateButton.className = "tool-button";
-            flipButton.className = "tool-button";
+            rotateImg.className = "tool-image rotate";
+            flipImage.className = "tool-image flip";
 
-            rotateButton.setAttribute("src", "../../../assets/images/rotate-icon.png");
-            flipButton.setAttribute("src", "../../../assets/images/flip-icon.png");
+            rotateImg.setAttribute("src", "../../../assets/images/rotate-icon.png");
+            flipImage.setAttribute("src", "../../../assets/images/flip-icon.png");
 
-            toolBox.appendChild(rotateButton);
-            toolBox.appendChild(flipButton);
+
+            // TODO - Add functionality to rotate and flip tile!
+            rotateImg.addEventListener("click", () => {
+                const currentRotation = parseInt(rotateImg.getAttribute("data-rotation") || "0");
+                const newRotation = currentRotation + 90;
+                rotateImg.style.transform = `rotate(${newRotation}deg)`;
+                rotateImg.setAttribute("data-rotation", newRotation);
+            });
+
+            flipImage.addEventListener("click", () => {
+
+            });
+
+            toolBox.appendChild(rotateImg);
+            toolBox.appendChild(flipImage);
             rightPanel.appendChild(toolBox);
         }
         i++;

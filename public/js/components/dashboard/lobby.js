@@ -106,7 +106,7 @@ const hideLobbyCard = () => {
 }
 
 // Disable leave button and change waiting message for 5 secs
-// const disableLobbyCard = () => {
+const disableLobbyCard = () => {
 //     const leaveButton = document.getElementsByClassName("leave-button")[0];
 //     const waitingMessage = document.getElementsByClassName("waiting-message")[0];
     
@@ -124,10 +124,10 @@ const hideLobbyCard = () => {
 //             clearInterval(intervalId);
 //         }
 //     }, 1000);
-// }
+}
 
 export {
     showLobbyCard,
     hideLobbyCard,
-    // disableLobbyCard
+    disableLobbyCard
 }

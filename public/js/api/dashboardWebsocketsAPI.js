@@ -1,7 +1,8 @@
 // import { io } from "socket.io-client";
 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
 import { BASE_URL_API } from '../../config.js';
-import { showLobbyCard, hideLobbyCard } from '../components/dashboard/lobby.js';
+import { showLobbyCard, hideLobbyCard, disableLobbyCard } from '../components/dashboard/lobby.js';
+import staticFilesAPI from './staticFilesAPI.js';
 
 let socket = null;
 
@@ -14,8 +15,10 @@ const initializeSocket = async (gameId) => {
     }
     // Socket.IO Client connection
     socket = io(`${BASE_URL_API}`, {
-        reconnectionAttempts: 5,
+        reconnection: true,
+        reconnectionDelay: 1000,
         reconnectionDelayMax: 10000,
+        reconnectionAttempts: 5,
         auth: { token: `Bearer ${sessionStorage.getItem('authToken')}` },
         query: { gameId }
     });
@@ -35,17 +38,18 @@ const initializeSocket = async (gameId) => {
             // Update the UI to show the refreshed lobby
             await showLobbyCard(gameId);
         });
-        listenEvent('game-started', (data) => {
+        listenEvent('game-started', async (data) => {
             console.log(data.message);
             // document.addEventListener('DOMContentLoaded', () => {
-                // Call disableLobbyCard when elements are guaranteed to exist
-                // disableLobbyCard();
+            // Call disableLobbyCard when elements are guaranteed to exist
+            // await disableLobbyCard();
             // });
 
             // save gameID in sessionStorage & Redirect to the game page
             sessionStorage.setItem('gameId', gameId);
-            window.location.href = '/game';
-            // window.location.href = `/game?gameId=${gameId}`;
+            // staticFilesAPI.validateAndRedirectToGame(gameId);
+            window.location.href = `/game`;
+
         });
         listenEvent('game-deleted', async (data) => {
             console.log(data);
@@ -60,14 +64,17 @@ const initializeSocket = async (gameId) => {
             // Update the UI to show the game created (& player joined in the room)
             await showLobbyCard(gameId);
         });
-        listenEvent('error', ({ error }) => {
-            console.error('Socket error:', error);
+        listenEvent('error', (error) => {
+            console.error('Socket error:', error.message);
+            // if (error.reason === 'room not recreated yet') {
+            //     socket.connect();
+            // }
         });
     });
 
     // Listen for connection failure
     socket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
+        console.error('Socket connection error:', error.message);
     });
 
     // Listen for disconnection
