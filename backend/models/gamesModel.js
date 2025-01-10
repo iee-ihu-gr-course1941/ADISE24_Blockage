@@ -246,11 +246,34 @@ const retrievePlayerScores = async (gameId) => {
         results.forEach(({ player_id, score }) => {
             playerScores[player_id] = score;
         });
+        // console.log(playerScores);
         return playerScores;
     } catch (err) {
         throw new Error(err.message);
     }
 }
+
+const retrieveParticipantsNameColorScoreByGameId = async (gameId) => {
+    try {
+        const [results] = await db.query(
+            `SELECT p.player_id, pl.player_name, p.color, p.score
+            FROM participants p 
+            INNER JOIN players pl ON p.player_id = pl.player_id
+            WHERE p.game_id = ?`,
+            [gameId]
+        );
+
+        const playerDetails = [];
+        results.forEach(({ player_id, player_name, score, color }) => {
+            playerDetails.push({ player_id, player_name, score, color });
+        });
+        // console.log(playerDetails);
+        return playerDetails;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
 
 module.exports = {
     createNewGame,
@@ -267,5 +290,6 @@ module.exports = {
     retrievePlacedTiles,
     retrieveParticipantsIds,
     retrievePlayerColors,
-    retrievePlayerScores
+    retrievePlayerScores,
+    retrieveParticipantsNameColorScoreByGameId
 };

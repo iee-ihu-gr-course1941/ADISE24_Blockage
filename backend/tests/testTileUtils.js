@@ -64,7 +64,7 @@ async function main() {
         // allocateTiles(1, [{ player_id: 1 }, { player_id: 2 }]);
 
         //constructBoard(gameId, numberOfLines, numberOfColumns)
-        let board = await constructBoard(1, 20, 20); // Wait for the promise to resolve
+        let board = await constructBoard(272, 5, 5); // Wait for the promise to resolve
 
         // Visualize the board
         visualizeBoard(board);
@@ -97,5 +97,6 @@ async function main() {
     }
 }
 
-// main();
+main();
+// console.log(normalizeCoordinates(mirrorTile(tiles[7], 1)));
 // interactiveTileTest();

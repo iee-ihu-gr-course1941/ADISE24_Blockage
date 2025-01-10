@@ -1,4 +1,4 @@
-const { retrievePlacedTiles, retrieveParticipantsIds, retrievePlayerColors, updateGameStatus} = require('../models/gamesModel');
+const { retrievePlacedTiles, retrieveParticipantsIds, retrievePlayerColors, updateGameStatus } = require('../models/gamesModel');
 const Mutex = require('async-mutex').Mutex;
 const db = require('../config/db');
 const gameLocks = {}; // Mutex for each game and player
@@ -159,7 +159,7 @@ async function placeTile(gameId, playerId, tileId, anchorX, anchorY, mirror, rot
             console.log(`Tile ${tileId} placed by player ${playerId} in game ${gameId}`);
 
             // Check for deadlock
-            if (await checkNoRemainingMoves(gameId, await constructBoard(gameId , 20, 20))) {
+            if (await checkNoRemainingMoves(gameId, await constructBoard(gameId))) {
                 await updateGameStatus(gameId, 'ended');
                 return;
             }
@@ -325,12 +325,12 @@ async function validateTilePlacement(board, gameId, playerId, tileId, anchorX, a
     let transformedCoordinates = tile.coordinates;
 
     transformedCoordinates = normalizeCoordinates(rotateTile({ coordinates: transformedCoordinates }, parseInt(rotate)));
-
+    // console.log('Transformed Coordinates  after normalizing rotate:', transformedCoordinates);
     transformedCoordinates = normalizeCoordinates(mirrorTile({ coordinates: transformedCoordinates }, parseInt(mirror)));
-
+    // console.log('Transformed Coordinates after normalizing mirror:', transformedCoordinates);
     // Transform tile coordinates to the Placement Position
     const transformedTile = transformedCoordinates.map(([x, y]) => [x + anchorX, y + anchorY]);
-
+    // console.log('Transformed Coordinates after normalizing anchors:', transformedTile);
     let cornerTouch = false;
 
     if (isFirstTile) {
@@ -343,7 +343,8 @@ async function validateTilePlacement(board, gameId, playerId, tileId, anchorX, a
     for (const [x, y] of transformedTile) {
         // Boundary Check
         if (x < 0 || x >= boardHeight || y < 0 || y >= boardWidth) {
-            return { valid: false, reason: 'Boundary violation' };
+            return { valid: false, reason: 'Boundary violation:' };
+            // return { valid: false, reason: 'Boundary violation: [x,y]' + [x, y] };
         }
 
         // Overlap Check
