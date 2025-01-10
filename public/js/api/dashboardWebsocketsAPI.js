@@ -2,7 +2,6 @@
 import { io } from "https://cdn.socket.io/4.8.1/socket.io.esm.min.js";
 import { BASE_URL_API } from '../../config.js';
 import { showLobbyCard, hideLobbyCard, disableLobbyCard } from '../components/dashboard/lobby.js';
-import staticFilesAPI from './staticFilesAPI.js';
 
 let socket = null;
 
@@ -40,14 +39,8 @@ const initializeSocket = async (gameId) => {
         });
         listenEvent('game-started', async (data) => {
             console.log(data.message);
-            // document.addEventListener('DOMContentLoaded', () => {
-            // Call disableLobbyCard when elements are guaranteed to exist
-            // await disableLobbyCard();
-            // });
-
             // save gameID in sessionStorage & Redirect to the game page
             sessionStorage.setItem('gameId', gameId);
-            // staticFilesAPI.validateAndRedirectToGame(gameId);
             window.location.href = `/game`;
 
         });

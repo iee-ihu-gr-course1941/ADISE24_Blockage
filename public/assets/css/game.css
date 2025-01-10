@@ -68,16 +68,10 @@ main {
     border-color: var(--text-secondary);
     border: 2px solid var(--text-secondary);
     border-radius: 5px;
-
-    /* left: 50%; */
-    /* transform: translateX(-50%); */
 }
 
 .info-box,
 #score-container {
-    /* background-color: #e3f2fd; */
-    /* border: 1px solid #b3d5fc; */
-    /* border-radius: 5px; */
     padding: 10px;
     text-align: center;
     display: flex;
@@ -86,13 +80,7 @@ main {
     gap: 20px;
 }
 
-.score-box {
-    /* display: flex;
-    flex-direction: column;
-    gap: 10px; */
-}
-
-.player-name {
+.participant-name {
     font-size: 16px;
 }
 
@@ -114,13 +102,14 @@ main {
 }
 
 /* GAME BOARD */
-
-#board, .board {
+#board,
+.board {
     display: grid;
     grid-template-rows: repeat(20, 30px);
     grid-template-columns: repeat(20, 30px);
     gap: 1px;
     background-color: #333;
+    box-shadow: rgba(65, 111, 150, 0.878) 0px 0px 5px 2px;
     border: 2px solid #555;
     height: max-content;
 }
@@ -139,6 +128,22 @@ main {
 
 .cell.occupied {
     background-color: #007bff;
+}
+
+.occupied-blue {
+    background-color: #007bff;
+}
+
+.occupied-red {
+    background-color: #ff0000;
+}
+
+.occupied-green {
+    background-color: #00ff00;
+}
+
+.occupied-magenta {
+    background-color: #FF00FF;
 }
 
 .cell.highlight {
@@ -160,10 +165,10 @@ main {
     justify-content: center;
     align-items: center;
     gap: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: rgba(65, 111, 150, 0.878) -5px 5px 5px 0px;
 }
 
-#right-panel > .tile-container {
+#right-panel>.tile-container {
     border-color: var(--bg-thirdary);
     display: flex;
     flex-wrap: wrap;
@@ -174,7 +179,7 @@ main {
     border: 2px solid #69db5f;
 }
 
-.tile-container > .tile-box {
+.tile-container>.tile-box {
     display: grid;
     border: 2px solid #ccc;
     background-color: var(--bg-primary);
@@ -184,72 +189,90 @@ main {
     top: 5px;
     left: 5px;
     font-size: 12px;
-    /* color: #666; */
-    /* background-color: rgba(255, 255, 255, 0.8); */
     border-radius: 3px;
     height: max-content;
+    cursor: auto;
+    opacity: 0.7;
 }
 
-.tile-box:hover{
-    /* background-color: var(--bg-primary-shadow); */
+.tile-box.active {
+    cursor: pointer !important;
+    opacity: 1 !important;
+}
+
+.tile-box:hover {
     background-color: var(--bg-primary-shadow);
 }
 
-.tile-box > .grid-cell-blue {
+.tile-box>.grid-cell-blue {
     width: 17px;
     height: 17px;
     background-color: #007bff;
     border: 1px solid #fff;
 }
 
-.tile-box  .grid-cell-red {
+.tile-box .grid-cell-red {
     width: 17px;
     height: 17px;
     background-color: #ff0000;
     border: 1px solid #fff;
 }
 
-.tile-box > .grid-cell-green {
+.tile-box>.grid-cell-green {
     width: 17px;
     height: 17px;
     background-color: #00ff00;
     border: 1px solid #fff;
 }
 
-.tile-box > .grid-cell-magenta {
+.tile-box>.grid-cell-magenta {
     width: 17px;
     height: 17px;
     background-color: #FF00FF;
     border: 1px solid #fff;
 }
 
-.tile-box > .grid-cell.empty {
+.tile-box>.grid-cell.empty {
     background-color: transparent;
     border: none;
 }
 
 .tool-box {
-    padding: 20px;
     display: flex;
+    flex-wrap: wrap;
+    padding: 20px;
     flex-direction: row;
     gap: 10px;
+    align-items: center;
     justify-content: space-around;
 }
 
-#right-panel > .tool-image {
+.tool-box>.clicked-tile {
+    width: max-content;
+    height: max-content;
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #fff;
+    padding: 5px;
+    border: 2px solid #ccc;
+    background-color: var(--bg-primary);
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+
+}
+
+#right-panel>.tool-image {
     width: 32px;
     height: 32px;
     padding: 7px;
-    /* background-color: #4c8efc; */
     border: 1px solid #000;
     color: white;
     font-size: 18px;
     cursor: pointer;
 }
 
- /* TODO */
-.rotate{
-    /* transform: rotate(90deg);  */
+.rotate {
     width: 50px;
     height: 50px;
 }
@@ -270,4 +293,9 @@ main {
 
 #tools button:hover {
     background-color: #3a6edc;
+}
+
+/* Green highlight for valid cells */
+.valid-cell {
+    background-color: rgba(0, 255, 0, 0.5);
 }

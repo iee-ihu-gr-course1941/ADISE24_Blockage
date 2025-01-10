@@ -32,20 +32,11 @@ app.use(express.urlencoded({extended: false}));
 app.use('/auth', authRoutes);
 app.use('/games', gameRoutes);
 
-// Serve static html files
-app.use('/', staticRoutes);
-// app.get('/login', (req, res) => {
-//     res.sendFile(path.join(__dirname , '/../', 'public', 'login.html'));
-// });
-
-
-// app.get('/dashboard', (req, res) => {
-//     res.sendFile(path.join(__dirname , '/../', 'public', 'dashboard.html'));
-// });
-
-
 // Applies middleware to all socketio events
 io.use(socketioToken);
+
+// Serve static html files
+app.use('/', staticRoutes);
 
 // Attach socketio to Express app
 app.set('io', io); // By doing this, Socket.IO instance becomes accessible from any part of the Express application that has access to the 'app' object!

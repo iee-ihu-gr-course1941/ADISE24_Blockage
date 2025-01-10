@@ -104,10 +104,12 @@ function allocateTiles(gameId, participants) {
     if (!gameTiles[gameId]) {
         gameTiles[gameId] = {};
     }
-
-    participants.forEach(({ player_id }) => {
+    // participants.forEach(({ player_id }) => {
+    //     gameTiles[gameId][player_id] = [...tiles]; // Clone tiles for each participant
+    // });
+    for (const { player_id } of participants) {
         gameTiles[gameId][player_id] = [...tiles]; // Clone tiles for each participant
-    });
+    }
 
     console.log(`Tiles allocated for game ${gameId}`);
 }

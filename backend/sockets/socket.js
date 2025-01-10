@@ -1,35 +1,19 @@
 const {
-    createNewGame,
-    retrieveGames,
     retrieveGameById,
-    gameExists,
     updateGameStatus,
     addParticipant,
     removeParticipant,
     checkIfParticipantInTheGame,
     retrievePlacedTiles,
     retrieveParticipantsIds,
-    retrievePlayerColors,
-    retrievePlayerScores,
     retrieveParticipantsNameColorScoreByGameId
 } = require('../models/gamesModel');
 const { getUserSocket, removeUserSocketMap } = require('../sockets/socketioAuthMiddleware.js');
 const {
-    rotateTile,
-    mirrorTile,
-    normalizeCoordinates,
-    visualizeTile,
-    getTileById,
     allocateTiles,
     placeTile,
-    reloadGameState,
-    initializeBoard,
     validateTilePlacement,
-    visualizeBoard,
     constructBoard,
-    generateTileTransformations,
-    checkNoRemainingMoves,
-    tiles,
     gameTiles
 } = require('../utils/tileUtils');
 
@@ -45,7 +29,6 @@ module.exports = (io) => {
         try {
             // Check if room already exists
 
-            // console.log(io.sockets.adapter.rooms);
             const roomExists = io.sockets.adapter.rooms.has(gameID);
             console.log(`Room ${gameID} exists: ${roomExists}`);
 
@@ -83,26 +66,30 @@ module.exports = (io) => {
                     if (game.status === 'started') {
 
                         const placedTiles = await retrievePlacedTiles(gameID);
+                        
                         // console.log(placedTiles);
                         if (placedTiles.length !== 0) {
                             // Reload the game state (board, scores)
 
                             const { updatedScores, updatedBoard, nextPlayerTurnName } = await getLastGameState(socket, gameID);
 
-                            socket.to(gameID).emit('game-update', {
+                            //TODO
+                            socket.emit('game-update', {
                                 board: updatedBoard,
+                                tiles: gameTiles[gameID],
                                 scores: updatedScores,
-                                nextPlayerTurn: nextPlayerTurnName,
+                                nextPlayerTurnName: nextPlayerTurnName,
                             });
                             return;
                         }
 
                         // gia na exei 3ekinisei to game (diladi status='started') simainei oti to arxiko room exei gemisei sto max_number_of_players
-                        const participants = await retrieveParticipantsIds(gameID);
+                        // const participants = await retrieveParticipantsIds(gameID);
+                        const participants = await retrieveParticipantsNameColorScoreByGameId(gameID);
 
                         const roomSockets = await io.in(gameID).fetchSockets();
-                        // console.log(roomSockets);
                         const roomSocketsLength = roomSockets.length;
+                        // console.log(roomSockets);
                         // console.log(roomSockets.length);
 
                         // Check if the room is full - That means all players have rejoined the room
@@ -114,12 +101,20 @@ module.exports = (io) => {
                             // Construct the empty board
                             const board = await constructBoard(gameID);
 
+                            let nextPlayerTurnName = null;
+                            for (let participant of participants) {
+                                if (game.player_turn === participant.player_id) {
+                                    nextPlayerTurnName = participant.player_name;
+                                    break;
+                                }
+                            }
+
                             // Notify all participants that the game has started
                             io.to(gameID).emit('board-initialized', {
                                 message: `Board for game '${gameID}' has initialized.`,
                                 board: board,
                                 tiles: gameTiles[gameID], // In-memory tiles for each player
-                                turn: game.player_turn,
+                                nextPlayerTurnName: nextPlayerTurnName,
                             });
 
                             console.log(`Board game '${gameID}' initialized, participants notified and tiles allocated.`);
@@ -130,6 +125,7 @@ module.exports = (io) => {
                 } else {
                     // player is not already in the game, So add him/her, join
                     await addParticipant(gameID, user.id);
+
                     socket.join(gameID)
                     socket.currentRoom = gameID;
                     console.log(`Joined in room '${gameID}' socket: '${socket.id}'`);
@@ -188,12 +184,14 @@ module.exports = (io) => {
                         socket.currentRoom = gameID;
                         console.log(`Recreated room '${gameID}' by socket: '${socket.id}'`);
                         socket.emit('game-created', { message: `Player '${user.playerName}' with socket ID '${socket.id}' created AGAIN the room '${gameID}'` });
-                        // return;
+
                     } else if (!roomRecreated.get(gameID)) {
                         // The room has not already been recreated by the original creator
+
                         socket.emit('error', { message: 'Room has not been recreated by the original creator yet.', reason: 'room not recreated yet' });
                         socket.disconnect(true);
                         return;
+
                     }
                 } else {
                     throw new Error(`Game with ID ${gameID} is not in status 'initialized' nor 'started', cannot create room for it`);
@@ -251,7 +249,7 @@ module.exports = (io) => {
                 socket.emit('error', { error: error.message, message: 'Error leaving game' });
             }
         });
-        socket.on('ping', () => socket.emit('pong', { message: 'Pong received' }));
+        // socket.on('ping', () => socket.emit('pong', { message: 'Pong received' }));
         socket.on('place-tile', async ({ tileId, anchorX, anchorY, mirror, rotate }) => {
             try {
 
@@ -280,9 +278,11 @@ module.exports = (io) => {
                 const { updatedScores, updatedBoard, nextPlayerTurnName } = await getLastGameState(socket, gameID);
 
                 io.to(gameID).emit('game-update', {
+                    message: "Tile placed successfully",
                     board: updatedBoard,
+                    tiles: gameTiles[gameID],
                     scores: updatedScores,
-                    nextPlayerTurn: nextPlayerTurnName,
+                    nextPlayerTurnName: nextPlayerTurnName,
                 });
                 console.log(`Move broadcasted: Player ${user.id} named ${nextPlayerTurnName} placed tile ${tileId} in game ${gameID}`);
 
@@ -357,10 +357,6 @@ module.exports = (io) => {
             }
         });
 
-        socket.onAny((event, ...args) => {
-            console.log(`Event received: ${event}, Args: ${JSON.stringify(args)}`);
-        });
-
         // Check if provided by client event name is valid
         // Return error message to socket
         // For Development purposes!
@@ -416,13 +412,10 @@ const getLastGameState = async (socket, gameID) => {
             socket.emit('error', { message: 'Next Player color is not assigned. Next player turn failure', error: error.message });
         }
 
-
         // Broadcast the unified event to all players in the game room
         const updatedBoard = await constructBoard(gameID);
 
         return { updatedScores, updatedBoard, nextPlayerTurnName };
-        // const roomSockets = await io.in(gameID).fetchSockets();
-        // console.log(`Sockets in room ${gameID}:`, roomSockets.map(s => s.id));
 
     } catch (error) {
         console.error('Error handling tile placement:', error.message);
