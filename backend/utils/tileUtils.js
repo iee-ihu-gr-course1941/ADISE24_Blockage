@@ -245,10 +245,10 @@ async function constructBoard(gameId, boardWidth = 20, boardHeight = 20) {
             let transformedCoordinates = tile.coordinates;
 
             // Apply rotation
-            transformedCoordinates = rotateTile({ coordinates: transformedCoordinates }, parseInt(rotate));
+            transformedCoordinates = normalizeCoordinates(rotateTile({ coordinates: transformedCoordinates }, parseInt(rotate)));
 
             // Apply mirroring
-            transformedCoordinates = mirrorTile({ coordinates: transformedCoordinates }, parseInt(mirror));
+            transformedCoordinates = normalizeCoordinates(mirrorTile({ coordinates: transformedCoordinates }, parseInt(mirror)));
 
             // Translate to the anchor point
             const placedCoordinates = transformedCoordinates.map(([x, y]) => [x + anchorX, y + anchorY]);
@@ -324,9 +324,9 @@ async function validateTilePlacement(board, gameId, playerId, tileId, anchorX, a
     const tile = getTileById(tileId);
     let transformedCoordinates = tile.coordinates;
 
-    transformedCoordinates = rotateTile({ coordinates: transformedCoordinates }, parseInt(rotate));
+    transformedCoordinates = normalizeCoordinates(rotateTile({ coordinates: transformedCoordinates }, parseInt(rotate)));
 
-    transformedCoordinates = mirrorTile({ coordinates: transformedCoordinates }, parseInt(mirror));
+    transformedCoordinates = normalizeCoordinates(mirrorTile({ coordinates: transformedCoordinates }, parseInt(mirror)));
 
     // Transform tile coordinates to the Placement Position
     const transformedTile = transformedCoordinates.map(([x, y]) => [x + anchorX, y + anchorY]);
